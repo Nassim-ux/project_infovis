@@ -1,0 +1,71 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Projet InfoVis</title>
+
+    <link rel="stylesheet" href="style.css" />
+
+    <link
+      href="https://fonts.googleapis.com/css?family=Open+Sans"
+      rel="stylesheet"
+    />
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
+  </head>
+  <body>
+    <div id="layout">
+      <div id="container">
+        <svg />
+      </div>
+    </div>
+    <div id="controls" width="50%">
+      <fieldset>
+        <legend>Veuillez choisir les informations à visualiser</legend>
+        <input
+          id="AvgAgeByRegion"
+          type="checkbox"
+          name="group1[]"
+          value="AvgAgeByRegion"
+        />
+        Moyenne d'age par région<br />
+        <input
+          id="PropBySexe"
+          type="checkbox"
+          name="group1[]"
+          value="PropBySexe"
+        />
+        Pourcentage de réponses par sexe<br />
+        <input
+          id="PropDisByRegion"
+          type="checkbox"
+          name="group1[]"
+          value="PropDisByRegion"
+        />
+        Pourcentage des maladies (<output id="output" for="Disvar"></output>)
+        par région
+        <p>
+          <label>la maladie : </label>
+          <input
+            type="range"
+            list="diseases"
+            id="Disvar"
+            value="0"
+            min="1"
+            max="3"
+            step="1"
+          />
+          <datalist id="diseases">
+            <option value="1" label="Diabète"></option>
+            <option value="2" label="Asthme"></option>
+            <option value="3" label="Tension"></option>
+          </datalist>
+        </p>
+        <br /><br />
+        <button onclick="valid()">Valider</button>
+      </fieldset>
+    </div>
+  </body>
+  <script src="script.js"></script>
+</html>
