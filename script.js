@@ -341,46 +341,29 @@ const margin = 80;
 const width = 1400 - 2 * margin;
 const height = 600 - 2 * margin;
 
-const chart = svg
-  .append("g")
-  .attr("transform", `translate(${margin}, ${margin})`);
-
-AvgAgeByRegion();
-
-// // vertical grid lines
-// // const makeXLines = () => d3.axisBottom()
-// //   .scale(xScale)
-
-// // vertical grid lines
-// // chart.append('g')
-// //   .attr('class', 'grid')
-// //   .attr('transform', `translate(0, ${height})`)
-// //   .call(makeXLines()
-// //     .tickSize(-height, 0, 0)
-// //     .tickFormat('')
-// //   )
+Draw("NbrResp", "Region");
 
 ("use strict");
 
 const range = document.querySelector("input[type=range]");
 const output = document.querySelector("output");
 if (range.value == 1) {
-  output.value = "Diabète";
+  output.value = "Le diabète";
 } else {
   if (range.value == 2) {
-    output.value = "Asthme";
+    output.value = "L'asthme";
   } else {
-    output.value = "Tension";
+    output.value = "La tension (HTA)";
   }
 }
 range.oninput = function () {
   if (range.value == 1) {
-    output.value = "Diabète";
+    output.value = "Le diabète";
   } else {
     if (range.value == 2) {
-      output.value = "Asthme";
+      output.value = "L'asthme";
     } else {
-      output.value = "Tension";
+      output.value = "La tension (HTA)";
     }
   }
 };
@@ -391,186 +374,1477 @@ $('input[type="checkbox"]').on("change", function () {
     .prop("checked", false);
 });
 
-function AvgAgeByRegion() {
-  d3.csv("MNT.csv").then(function (data) {
-    // let sumH = 0;
-    // let sumF = 0;
-    // let sumAH = 0;
-    // let sumAF = 0;
-    // let avrgH = 0;
-    // let avrgF = 0;
-    let regionsDup1D = [];
-    let regions2D = [];
+function Draw(what, by) {
+  svg.selectAll("*").remove();
+  const chart = svg
+    .append("g")
+    .attr("transform", `translate(${margin}, ${margin})`);
+  if (what == "AvgAge") {
+    if (by == "Region") {
+      d3.csv("MNT.csv").then(function (data) {
+        let regionsDup1D = [];
+        let regions2D = [];
+        let maxheight = 0;
 
-    // if (d["1.sexe"] == "homme") {
-    //     sumH = sumH + 1;
-    //     sumAH = sumAH + parseInt(d["2.Quel âge avez-vous ?"]);
-    //   } else {
-    //     sumF = sumF + 1;
-    //     sumAF = sumAF + parseInt(d["2.Quel âge avez-vous ?"]);
+        data.forEach(function (d) {
+          regionsDup1D.push(d["2.wilaya"]);
+        });
+        let regions1D = Array.from(new Set(regionsDup1D));
+        regions1D.forEach(function (w) {
+          regions2D.push([
+            w,
+            0,
+            0,
+            0,
+            colors[Math.floor(Math.random() * colors.length)],
+          ]);
+        });
 
-    data.forEach(function (d) {
-      regionsDup1D.push(d["2.wilaya"]);
-    });
-    let regions1D = Array.from(new Set(regionsDup1D));
-    regions1D.forEach(function (w) {
-      regions2D.push([
-        w,
-        0,
-        0,
-        0,
-        colors[Math.floor(Math.random() * colors.length)],
-      ]);
-    });
+        regions2D.forEach(function (w) {
+          data.forEach(function (d) {
+            if (d["2.wilaya"] == w[0]) {
+              w[1] = w[1] + 1;
+              w[2] = w[2] + parseInt(d["2.Quel âge avez-vous ?"]);
+            }
+            w[3] = (w[2] / w[1]).toFixed(1);
+          });
+          if (w[3] > maxheight) {
+            maxheight = Math.ceil(w[3] / 5) * 5;
+          }
+        });
 
-    regions2D.forEach(function (w) {
-      data.forEach(function (d) {
-        if (d["2.wilaya"] == w[0]) {
-          w[1] = w[1] + 1;
-          w[2] = w[2] + parseInt(d["2.Quel âge avez-vous ?"]);
-        }
-        w[3] = (w[2] / w[1]).toFixed(2);
-      });
-    });
+        const keys = ["wilaya", "sum", "sumAge", "avrg", "color"];
+        const values = regions2D;
+        const objects = values.map((array) => {
+          const object = {};
 
-    const keys = ["wilaya", "sum", "sumAge", "avrg", "color"];
-    const values = regions2D;
-    const objects = values.map((array) => {
-      const object = {};
+          keys.forEach((key, i) => (object[key] = array[i]));
 
-      keys.forEach((key, i) => (object[key] = array[i]));
+          return object;
+        });
+        //JSON.stringify(objects);
+        console.log(objects);
 
-      return object;
-    });
-    //JSON.stringify(objects);
-    console.log(objects);
+        const xScale = d3
+          .scaleBand()
+          .range([0, width])
+          .domain(objects.map((obj) => obj.wilaya))
+          .padding(0.4);
 
-    const xScale = d3
-      .scaleBand()
-      .range([0, width])
-      .domain(objects.map((obj) => obj.wilaya))
-      .padding(0.4);
+        const yScale = d3
+          .scaleLinear()
+          .range([height, 0])
+          .domain([0, maxheight]);
 
-    const yScale = d3.scaleLinear().range([height, 0]).domain([0, 40]);
+        const makeYLines = () => d3.axisLeft().scale(yScale);
 
-    const makeYLines = () => d3.axisLeft().scale(yScale);
+        chart
+          .append("g")
+          .attr("transform", `translate(0, ${height})`)
+          .call(d3.axisBottom(xScale));
 
-    chart
-      .append("g")
-      .attr("transform", `translate(0, ${height})`)
-      .call(d3.axisBottom(xScale));
+        chart.append("g").call(d3.axisLeft(yScale));
 
-    chart.append("g").call(d3.axisLeft(yScale));
+        chart
+          .append("g")
+          .attr("class", "grid")
+          .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
-    chart
-      .append("g")
-      .attr("class", "grid")
-      .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
+        const barGroups = chart.selectAll().data(objects).enter().append("g");
 
-    const barGroups = chart.selectAll().data(objects).enter().append("g");
+        barGroups
+          .append("rect")
+          .attr("class", "bar")
+          .attr("x", (g) => xScale(g.wilaya))
+          .attr("y", (g) => yScale(g.avrg))
+          .style("fill", (g) => g.color)
+          .attr("height", (g) => height - yScale(g.avrg))
+          .attr("width", xScale.bandwidth())
+          .on("mouseenter", function (actual, i) {
+            d3.selectAll(".avrg").attr("opacity", 0);
 
-    barGroups
-      .append("rect")
-      .attr("class", "bar")
-      .attr("x", (g) => xScale(g.wilaya))
-      .attr("y", (g) => yScale(g.avrg))
-      .style("fill", (g) => g.color)
-      .attr("height", (g) => height - yScale(g.avrg))
-      .attr("width", xScale.bandwidth())
-      .on("mouseenter", function (actual, i) {
-        d3.selectAll(".avrg").attr("opacity", 0);
+            d3.select(this)
+              .transition()
+              .duration(300)
+              .attr("opacity", 0.6)
+              .attr("x", (a) => xScale(a.wilaya) - 5)
+              .attr("width", xScale.bandwidth() + 10);
 
-        d3.select(this)
-          .transition()
-          .duration(300)
-          .attr("opacity", 0.6)
-          .attr("x", (a) => xScale(a.wilaya) - 5)
-          .attr("width", xScale.bandwidth() + 10);
+            const y = yScale(actual.avrg);
 
-        const y = yScale(actual.avrg);
+            line = chart
+              .append("line")
+              .attr("id", "limit")
+              .attr("x1", 0)
+              .attr("y1", y)
+              .attr("x2", width)
+              .attr("y2", y);
 
-        line = chart
-          .append("line")
-          .attr("id", "limit")
-          .attr("x1", 0)
-          .attr("y1", y)
-          .attr("x2", width)
-          .attr("y2", y);
+            barGroups
+              .append("text")
+              .attr("class", "divergence")
+              .attr("x", (a) => xScale(a.wilaya) + xScale.bandwidth() / 2)
+              .attr("y", (a) => yScale(a.avrg) - 10)
+              .attr("fill", "white")
+              .attr("text-anchor", "middle")
+              .text((a, idx) => {
+                const divergence = (a.avrg - actual.avrg).toFixed(1);
+
+                let text = "";
+                if (divergence > 0) text += "+";
+                text += `${divergence}`;
+
+                return idx !== i ? text : "";
+              });
+          })
+          .on("mouseleave", function () {
+            d3.selectAll(".avrg").attr("opacity", 1);
+
+            d3.select(this)
+              .transition()
+              .duration(300)
+              .attr("opacity", 1)
+              .attr("x", (a) => xScale(a.wilaya))
+              .attr("width", xScale.bandwidth());
+
+            chart.selectAll("#limit").remove();
+            chart.selectAll(".divergence").remove();
+          });
 
         barGroups
           .append("text")
-          .attr("class", "divergence")
+          .attr("class", "avrg")
           .attr("x", (a) => xScale(a.wilaya) + xScale.bandwidth() / 2)
-          .attr("y", (a) => yScale(a.avrg) + 30)
-          .attr("fill", "white")
+          .attr("y", (a) => yScale(a.avrg) - 10)
           .attr("text-anchor", "middle")
-          .text((a, idx) => {
-            const divergence = (a.avrg - actual.avrg).toFixed(2);
+          .text((a) => `${a.avrg}`);
 
-            let text = "";
-            if (divergence > 0) text += "+";
-            text += `${divergence}`;
+        svg
+          .append("text")
+          .attr("class", "label")
+          .attr("x", -(height / 2) - margin)
+          .attr("y", margin / 2.4)
+          .attr("transform", "rotate(-90)")
+          .attr("text-anchor", "middle")
+          .text("La moyenne d'Âge ");
 
-            return idx !== i ? text : "";
-          });
-      })
-      .on("mouseleave", function () {
-        d3.selectAll(".avrg").attr("opacity", 1);
+        svg
+          .append("text")
+          .attr("class", "label")
+          .attr("x", width / 2 + margin)
+          .attr("y", height + margin * 1.7)
+          .attr("text-anchor", "middle")
+          .text("Les wilayas");
 
-        d3.select(this)
-          .transition()
-          .duration(300)
-          .attr("opacity", 1)
-          .attr("x", (a) => xScale(a.wilaya))
-          .attr("width", xScale.bandwidth());
+        svg
+          .append("text")
+          .attr("class", "title")
+          .attr("x", width / 2 + margin)
+          .attr("y", 40)
+          .attr("text-anchor", "middle")
+          .text("Les moyennes d'âge par wilaya");
 
-        chart.selectAll("#limit").remove();
-        chart.selectAll(".divergence").remove();
+        svg
+          .append("text")
+          .attr("class", "source")
+          .attr("x", width - margin / 2)
+          .attr("y", height + margin * 1.7)
+          .attr("text-anchor", "start")
+          .text("Source: MNT, 2020");
       });
+    } else {
+      if (by == "Sexe") {
+        d3.csv("MNT.csv").then(function (data) {
+          let sexesDup1D = [];
+          let sexes2D = [];
+          let maxheight = 0;
 
-    barGroups
-      .append("text")
-      .attr("class", "avrg")
-      .attr("x", (a) => xScale(a.wilaya) + xScale.bandwidth() / 2)
-      .attr("y", (a) => yScale(a.avrg) + 30)
-      .attr("text-anchor", "middle")
-      .text((a) => `${a.avrg}`);
+          data.forEach(function (d) {
+            sexesDup1D.push(d["1.sexe"]);
+          });
+          let sexes1D = Array.from(new Set(sexesDup1D));
+          sexes1D.forEach(function (s) {
+            sexes2D.push([
+              s,
+              0,
+              0,
+              0,
+              colors[Math.floor(Math.random() * colors.length)],
+            ]);
+          });
 
-    svg
-      .append("text")
-      .attr("class", "label")
-      .attr("x", -(height / 2) - margin)
-      .attr("y", margin / 2.4)
-      .attr("transform", "rotate(-90)")
-      .attr("text-anchor", "middle")
-      .text("La moyenne d'Âge ");
+          sexes2D.forEach(function (s) {
+            data.forEach(function (d) {
+              if (d["1.sexe"] == s[0]) {
+                s[1] = s[1] + 1;
+                s[2] = s[2] + parseInt(d["2.Quel âge avez-vous ?"]);
+              }
+              s[3] = (s[2] / s[1]).toFixed(1);
+            });
+            if (s[3] > maxheight) {
+              maxheight = Math.ceil(s[3] / 2) * 2;
+            }
+          });
 
-    svg
-      .append("text")
-      .attr("class", "label")
-      .attr("x", width / 2 + margin)
-      .attr("y", height + margin * 1.7)
-      .attr("text-anchor", "middle")
-      .text("Les wilayas");
+          const keys = ["sexe", "sum", "sumAge", "avrg", "color"];
+          const values = sexes2D;
+          const objects = values.map((array) => {
+            const object = {};
 
-    svg
-      .append("text")
-      .attr("class", "title")
-      .attr("x", width / 2 + margin)
-      .attr("y", 40)
-      .attr("text-anchor", "middle")
-      .text("Les moyennes d'âge par wilaya");
+            keys.forEach((key, i) => (object[key] = array[i]));
 
-    svg
-      .append("text")
-      .attr("class", "source")
-      .attr("x", width - margin / 2)
-      .attr("y", height + margin * 1.7)
-      .attr("text-anchor", "start")
-      .text("Source: MNT, 2020");
-  });
+            return object;
+          });
+          //JSON.stringify(objects);
+          console.log(objects);
+
+          const xScale = d3
+            .scaleBand()
+            .range([0, width])
+            .domain(objects.map((obj) => obj.sexe))
+            .padding(0.4);
+
+          const yScale = d3
+            .scaleLinear()
+            .range([height, 0])
+            .domain([0, maxheight]);
+
+          const makeYLines = () => d3.axisLeft().scale(yScale);
+
+          chart
+            .append("g")
+            .attr("transform", `translate(0, ${height})`)
+            .call(d3.axisBottom(xScale));
+
+          chart.append("g").call(d3.axisLeft(yScale));
+
+          chart
+            .append("g")
+            .attr("class", "grid")
+            .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
+
+          const barGroups = chart.selectAll().data(objects).enter().append("g");
+
+          barGroups
+            .append("rect")
+            .attr("class", "bar")
+            .attr("x", (g) => xScale(g.sexe))
+            .attr("y", (g) => yScale(g.avrg))
+            .style("fill", (g) => g.color)
+            .attr("height", (g) => height - yScale(g.avrg))
+            .attr("width", xScale.bandwidth())
+            .on("mouseenter", function (actual, i) {
+              d3.selectAll(".avrg").attr("opacity", 0);
+
+              d3.select(this)
+                .transition()
+                .duration(300)
+                .attr("opacity", 0.6)
+                .attr("x", (a) => xScale(a.sexe) - 5)
+                .attr("width", xScale.bandwidth() + 10);
+
+              const y = yScale(actual.avrg);
+
+              line = chart
+                .append("line")
+                .attr("id", "limit")
+                .attr("x1", 0)
+                .attr("y1", y)
+                .attr("x2", width)
+                .attr("y2", y);
+
+              barGroups
+                .append("text")
+                .attr("class", "divergence")
+                .attr("x", (a) => xScale(a.sexe) + xScale.bandwidth() / 2)
+                .attr("y", (a) => yScale(a.avrg) - 10)
+                .attr("fill", "white")
+                .attr("text-anchor", "middle")
+                .text((a, idx) => {
+                  const divergence = (a.avrg - actual.avrg).toFixed(1);
+
+                  let text = "";
+                  if (divergence > 0) text += "+";
+                  text += `${divergence}`;
+
+                  return idx !== i ? text : "";
+                });
+            })
+            .on("mouseleave", function () {
+              d3.selectAll(".avrg").attr("opacity", 1);
+
+              d3.select(this)
+                .transition()
+                .duration(300)
+                .attr("opacity", 1)
+                .attr("x", (a) => xScale(a.sexe))
+                .attr("width", xScale.bandwidth());
+
+              chart.selectAll("#limit").remove();
+              chart.selectAll(".divergence").remove();
+            });
+
+          barGroups
+            .append("text")
+            .attr("class", "avrg")
+            .attr("x", (a) => xScale(a.sexe) + xScale.bandwidth() / 2)
+            .attr("y", (a) => yScale(a.avrg) - 10)
+            .attr("text-anchor", "middle")
+            .text((a) => `${a.avrg}`);
+
+          svg
+            .append("text")
+            .attr("class", "label")
+            .attr("x", -(height / 2) - margin)
+            .attr("y", margin / 2.4)
+            .attr("transform", "rotate(-90)")
+            .attr("text-anchor", "middle")
+            .text("La moyenne d'Âge ");
+
+          svg
+            .append("text")
+            .attr("class", "label")
+            .attr("x", width / 2 + margin)
+            .attr("y", height + margin * 1.7)
+            .attr("text-anchor", "middle")
+            .text("Sexe");
+
+          svg
+            .append("text")
+            .attr("class", "title")
+            .attr("x", width / 2 + margin)
+            .attr("y", 40)
+            .attr("text-anchor", "middle")
+            .text("Les moyennes d'âge par sexe");
+
+          svg
+            .append("text")
+            .attr("class", "source")
+            .attr("x", width - margin / 2)
+            .attr("y", height + margin * 1.7)
+            .attr("text-anchor", "start")
+            .text("Source: MNT, 2020");
+        });
+      } else {
+        if (by == "NivEtud") {
+          d3.csv("MNT.csv").then(function (data) {
+            let nivsDup1D = [];
+            let nivs2D = [];
+            let maxheight = 0;
+
+            data.forEach(function (d) {
+              nivsDup1D.push(d["3.Quel est votre niveau d'étude"]);
+            });
+            let nivs1D = Array.from(new Set(nivsDup1D));
+            nivs1D.forEach(function (n) {
+              nivs2D.push([
+                n,
+                0,
+                0,
+                0,
+                colors[Math.floor(Math.random() * colors.length)],
+              ]);
+            });
+
+            nivs2D.forEach(function (n) {
+              data.forEach(function (d) {
+                if (d["3.Quel est votre niveau d'étude"] == n[0]) {
+                  n[1] = n[1] + 1;
+                  n[2] = n[2] + parseInt(d["2.Quel âge avez-vous ?"]);
+                }
+                n[3] = (n[2] / n[1]).toFixed(1);
+              });
+              if (n[3] > maxheight) {
+                maxheight = Math.ceil(n[3] / 5) * 5;
+              }
+            });
+
+            const keys = ["niv", "sum", "sumAge", "avrg", "color"];
+            const values = nivs2D;
+            const objects = values.map((array) => {
+              const object = {};
+
+              keys.forEach((key, i) => (object[key] = array[i]));
+
+              return object;
+            });
+            //JSON.stringify(objects);
+            console.log(objects);
+
+            const xScale = d3
+              .scaleBand()
+              .range([0, width])
+              .domain(objects.map((obj) => obj.niv))
+              .padding(0.4);
+
+            const yScale = d3
+              .scaleLinear()
+              .range([height, 0])
+              .domain([0, maxheight]);
+
+            const makeYLines = () => d3.axisLeft().scale(yScale);
+
+            chart
+              .append("g")
+              .attr("transform", `translate(0, ${height})`)
+              .call(d3.axisBottom(xScale));
+
+            chart.append("g").call(d3.axisLeft(yScale));
+
+            chart
+              .append("g")
+              .attr("class", "grid")
+              .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
+
+            const barGroups = chart
+              .selectAll()
+              .data(objects)
+              .enter()
+              .append("g");
+
+            barGroups
+              .append("rect")
+              .attr("class", "bar")
+              .attr("x", (g) => xScale(g.niv))
+              .attr("y", (g) => yScale(g.avrg))
+              .style("fill", (g) => g.color)
+              .attr("height", (g) => height - yScale(g.avrg))
+              .attr("width", xScale.bandwidth())
+              .on("mouseenter", function (actual, i) {
+                d3.selectAll(".avrg").attr("opacity", 0);
+
+                d3.select(this)
+                  .transition()
+                  .duration(300)
+                  .attr("opacity", 0.6)
+                  .attr("x", (a) => xScale(a.niv) - 5)
+                  .attr("width", xScale.bandwidth() + 10);
+
+                const y = yScale(actual.avrg);
+
+                line = chart
+                  .append("line")
+                  .attr("id", "limit")
+                  .attr("x1", 0)
+                  .attr("y1", y)
+                  .attr("x2", width)
+                  .attr("y2", y);
+
+                barGroups
+                  .append("text")
+                  .attr("class", "divergence")
+                  .attr("x", (a) => xScale(a.niv) + xScale.bandwidth() / 2)
+                  .attr("y", (a) => yScale(a.avrg) - 10)
+                  .attr("fill", "white")
+                  .attr("text-anchor", "middle")
+                  .text((a, idx) => {
+                    const divergence = (a.avrg - actual.avrg).toFixed(1);
+
+                    let text = "";
+                    if (divergence > 0) text += "+";
+                    text += `${divergence}`;
+
+                    return idx !== i ? text : "";
+                  });
+              })
+              .on("mouseleave", function () {
+                d3.selectAll(".avrg").attr("opacity", 1);
+
+                d3.select(this)
+                  .transition()
+                  .duration(300)
+                  .attr("opacity", 1)
+                  .attr("x", (a) => xScale(a.niv))
+                  .attr("width", xScale.bandwidth());
+
+                chart.selectAll("#limit").remove();
+                chart.selectAll(".divergence").remove();
+              });
+
+            barGroups
+              .append("text")
+              .attr("class", "avrg")
+              .attr("x", (a) => xScale(a.niv) + xScale.bandwidth() / 2)
+              .attr("y", (a) => yScale(a.avrg) - 10)
+              .attr("text-anchor", "middle")
+              .text((a) => `${a.avrg}`);
+
+            svg
+              .append("text")
+              .attr("class", "label")
+              .attr("x", -(height / 2) - margin)
+              .attr("y", margin / 2.4)
+              .attr("transform", "rotate(-90)")
+              .attr("text-anchor", "middle")
+              .text("La moyenne d'Âge ");
+
+            svg
+              .append("text")
+              .attr("class", "label")
+              .attr("x", width / 2 + margin)
+              .attr("y", height + margin * 1.7)
+              .attr("text-anchor", "middle")
+              .text("les niveaux d'études");
+
+            svg
+              .append("text")
+              .attr("class", "title")
+              .attr("x", width / 2 + margin)
+              .attr("y", 40)
+              .attr("text-anchor", "middle")
+              .text("Les moyennes d'âge par niveaux d'études");
+
+            svg
+              .append("text")
+              .attr("class", "source")
+              .attr("x", width - margin / 2)
+              .attr("y", height + margin * 1.7)
+              .attr("text-anchor", "start")
+              .text("Source: MNT, 2020");
+          });
+        } else {
+          if (by == "Activity") {
+            d3.csv("MNT.csv").then(function (data) {
+              let actsDup1D = [];
+              let acts2D = [];
+              let maxheight = 0;
+
+              data.forEach(function (d) {
+                actsDup1D.push(
+                  d["4.Quelles est votre activité  professionnelle"]
+                );
+              });
+              let acts1D = Array.from(new Set(actsDup1D));
+              acts1D.forEach(function (a) {
+                acts2D.push([
+                  a,
+                  0,
+                  0,
+                  0,
+                  colors[Math.floor(Math.random() * colors.length)],
+                ]);
+              });
+
+              acts2D.forEach(function (a) {
+                data.forEach(function (d) {
+                  if (
+                    d["4.Quelles est votre activité  professionnelle"] == a[0]
+                  ) {
+                    a[1] = a[1] + 1;
+                    a[2] = a[2] + parseInt(d["2.Quel âge avez-vous ?"]);
+                  }
+                  a[3] = (a[2] / a[1]).toFixed(1);
+                });
+                if (a[3] > maxheight) {
+                  maxheight = Math.ceil(a[3] / 5) * 5;
+                }
+              });
+
+              const keys = ["act", "sum", "sumAge", "avrg", "color"];
+              const values = acts2D;
+              const objects = values.map((array) => {
+                const object = {};
+
+                keys.forEach((key, i) => (object[key] = array[i]));
+
+                return object;
+              });
+              //JSON.stringify(objects);
+              console.log(objects);
+
+              const xScale = d3
+                .scaleBand()
+                .range([0, width])
+                .domain(objects.map((obj) => obj["act"]))
+                .padding(0.4);
+
+              const yScale = d3
+                .scaleLinear()
+                .range([height, 0])
+                .domain([0, maxheight]);
+
+              const makeYLines = () => d3.axisLeft().scale(yScale);
+
+              chart
+                .append("g")
+                .attr("transform", `translate(0, ${height})`)
+                .call(d3.axisBottom(xScale));
+
+              chart.append("g").call(d3.axisLeft(yScale));
+
+              chart
+                .append("g")
+                .attr("class", "grid")
+                .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
+
+              const barGroups = chart
+                .selectAll()
+                .data(objects)
+                .enter()
+                .append("g");
+
+              barGroups
+                .append("rect")
+                .attr("class", "bar")
+                .attr("x", (g) => xScale(g.act))
+                .attr("y", (g) => yScale(g.avrg))
+                .style("fill", (g) => g.color)
+                .attr("height", (g) => height - yScale(g.avrg))
+                .attr("width", xScale.bandwidth())
+                .on("mouseenter", function (actual, i) {
+                  d3.selectAll(".avrg").attr("opacity", 0);
+
+                  d3.select(this)
+                    .transition()
+                    .duration(300)
+                    .attr("opacity", 0.6)
+                    .attr("x", (a) => xScale(a.act) - 5)
+                    .attr("width", xScale.bandwidth() + 10);
+
+                  const y = yScale(actual.avrg);
+
+                  line = chart
+                    .append("line")
+                    .attr("id", "limit")
+                    .attr("x1", 0)
+                    .attr("y1", y)
+                    .attr("x2", width)
+                    .attr("y2", y);
+
+                  barGroups
+                    .append("text")
+                    .attr("class", "divergence")
+                    .attr("x", (a) => xScale(a.act) + xScale.bandwidth() / 2)
+                    .attr("y", (a) => yScale(a.avrg) - 10)
+                    .attr("fill", "white")
+                    .attr("text-anchor", "middle")
+                    .text((a, idx) => {
+                      const divergence = (a.avrg - actual.avrg).toFixed(1);
+
+                      let text = "";
+                      if (divergence > 0) text += "+";
+                      text += `${divergence}`;
+
+                      return idx !== i ? text : "";
+                    });
+                })
+                .on("mouseleave", function () {
+                  d3.selectAll(".avrg").attr("opacity", 1);
+
+                  d3.select(this)
+                    .transition()
+                    .duration(300)
+                    .attr("opacity", 1)
+                    .attr("x", (a) => xScale(a.act))
+                    .attr("width", xScale.bandwidth());
+
+                  chart.selectAll("#limit").remove();
+                  chart.selectAll(".divergence").remove();
+                });
+
+              barGroups
+                .append("text")
+                .attr("class", "avrg")
+                .attr("x", (a) => xScale(a.act) + xScale.bandwidth() / 2)
+                .attr("y", (a) => yScale(a.avrg) - 10)
+                .attr("text-anchor", "middle")
+                .text((a) => `${a.avrg}`);
+
+              svg
+                .append("text")
+                .attr("class", "label")
+                .attr("x", -(height / 2) - margin)
+                .attr("y", margin / 2.4)
+                .attr("transform", "rotate(-90)")
+                .attr("text-anchor", "middle")
+                .text("La moyenne d'Âge ");
+
+              svg
+                .append("text")
+                .attr("class", "label")
+                .attr("x", width / 2 + margin)
+                .attr("y", height + margin * 1.7)
+                .attr("text-anchor", "middle")
+                .text("Activité professionnelle");
+
+              svg
+                .append("text")
+                .attr("class", "title")
+                .attr("x", width / 2 + margin)
+                .attr("y", 40)
+                .attr("text-anchor", "middle")
+                .text("Les moyennes d'âge par activité profesionnelle");
+
+              svg
+                .append("text")
+                .attr("class", "source")
+                .attr("x", width - margin / 2)
+                .attr("y", height + margin * 1.7)
+                .attr("text-anchor", "start")
+                .text("Source: MNT, 2020");
+            });
+          }
+        }
+      }
+    }
+  }
+
+  if (what == "NbrResp") {
+    if (by == "Region") {
+      d3.csv("MNT.csv").then(function (data) {
+        let regionsDup1D = [];
+        let regions2D = [];
+        let maxheight = 0;
+
+        data.forEach(function (d) {
+          regionsDup1D.push(d["2.wilaya"]);
+        });
+        let regions1D = Array.from(new Set(regionsDup1D));
+        regions1D.forEach(function (w) {
+          regions2D.push([
+            w,
+            0,
+            colors[Math.floor(Math.random() * colors.length)],
+          ]);
+        });
+
+        regions2D.forEach(function (w) {
+          data.forEach(function (d) {
+            if (d["2.wilaya"] == w[0]) {
+              w[1] = w[1] + 1;
+            }
+          });
+          if (w[1] > maxheight) {
+            maxheight = Math.ceil(w[1] / 5) * 5;
+          }
+        });
+
+        const keys = ["wilaya", "sum", "color"];
+        const values = regions2D;
+        const objects = values.map((array) => {
+          const object = {};
+
+          keys.forEach((key, i) => (object[key] = array[i]));
+
+          return object;
+        });
+        //JSON.stringify(objects);
+        console.log(objects);
+
+        const xScale = d3
+          .scaleBand()
+          .range([0, width])
+          .domain(objects.map((obj) => obj.wilaya))
+          .padding(0.4);
+
+        const yScale = d3
+          .scaleLinear()
+          .range([height, 0])
+          .domain([0, maxheight]);
+
+        const makeYLines = () => d3.axisLeft().scale(yScale);
+
+        chart
+          .append("g")
+          .attr("transform", `translate(0, ${height})`)
+          .call(d3.axisBottom(xScale));
+
+        chart.append("g").call(d3.axisLeft(yScale));
+
+        chart
+          .append("g")
+          .attr("class", "grid")
+          .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
+
+        const barGroups = chart.selectAll().data(objects).enter().append("g");
+
+        barGroups
+          .append("rect")
+          .attr("class", "bar")
+          .attr("x", (g) => xScale(g.wilaya))
+          .attr("y", (g) => yScale(g.sum))
+          .style("fill", (g) => g.color)
+          .attr("height", (g) => height - yScale(g.sum))
+          .attr("width", xScale.bandwidth())
+          .on("mouseenter", function (actual, i) {
+            d3.selectAll(".sum").attr("opacity", 0);
+
+            d3.select(this)
+              .transition()
+              .duration(300)
+              .attr("opacity", 0.6)
+              .attr("x", (a) => xScale(a.wilaya) - 5)
+              .attr("width", xScale.bandwidth() + 10);
+
+            const y = yScale(actual.sum);
+
+            line = chart
+              .append("line")
+              .attr("id", "limit")
+              .attr("x1", 0)
+              .attr("y1", y)
+              .attr("x2", width)
+              .attr("y2", y);
+
+            barGroups
+              .append("text")
+              .attr("class", "divergence")
+              .attr("x", (a) => xScale(a.wilaya) + xScale.bandwidth() / 2)
+              .attr("y", (a) => yScale(a.sum) - 10)
+              .attr("fill", "white")
+              .attr("text-anchor", "middle")
+              .text((a, idx) => {
+                const divergence = (a.sum - actual.sum).toFixed(1);
+
+                let text = "";
+                if (divergence > 0) text += "+";
+                text += `${divergence}`;
+
+                return idx !== i ? text : "";
+              });
+          })
+          .on("mouseleave", function () {
+            d3.selectAll(".sum").attr("opacity", 1);
+
+            d3.select(this)
+              .transition()
+              .duration(300)
+              .attr("opacity", 1)
+              .attr("x", (a) => xScale(a.wilaya))
+              .attr("width", xScale.bandwidth());
+
+            chart.selectAll("#limit").remove();
+            chart.selectAll(".divergence").remove();
+          });
+
+        barGroups
+          .append("text")
+          .attr("class", "sum")
+          .attr("x", (a) => xScale(a.wilaya) + xScale.bandwidth() / 2)
+          .attr("y", (a) => yScale(a.sum) - 10)
+          .attr("text-anchor", "middle")
+          .text((a) => `${a.sum}`);
+
+        svg
+          .append("text")
+          .attr("class", "label")
+          .attr("x", -(height / 2) - margin)
+          .attr("y", margin / 2.4)
+          .attr("transform", "rotate(-90)")
+          .attr("text-anchor", "middle")
+          .text("Le nombre de réponse ");
+
+        svg
+          .append("text")
+          .attr("class", "label")
+          .attr("x", width / 2 + margin)
+          .attr("y", height + margin * 1.7)
+          .attr("text-anchor", "middle")
+          .text("Les wilayas");
+
+        svg
+          .append("text")
+          .attr("class", "title")
+          .attr("x", width / 2 + margin)
+          .attr("y", 40)
+          .attr("text-anchor", "middle")
+          .text("Le nombre de résponse par wilaya");
+
+        svg
+          .append("text")
+          .attr("class", "source")
+          .attr("x", width - margin / 2)
+          .attr("y", height + margin * 1.7)
+          .attr("text-anchor", "start")
+          .text("Source: MNT, 2020");
+      });
+    } else {
+      if (by == "Sexe") {
+        d3.csv("MNT.csv").then(function (data) {
+          let sexesDup1D = [];
+          let sexes2D = [];
+          let maxheight = 0;
+
+          data.forEach(function (d) {
+            sexesDup1D.push(d["1.sexe"]);
+          });
+          let sexes1D = Array.from(new Set(sexesDup1D));
+          sexes1D.forEach(function (s) {
+            sexes2D.push([
+              s,
+              0,
+              colors[Math.floor(Math.random() * colors.length)],
+            ]);
+          });
+
+          sexes2D.forEach(function (s) {
+            data.forEach(function (d) {
+              if (d["1.sexe"] == s[0]) {
+                s[1] = s[1] + 1;
+              }
+            });
+            if (s[1] > maxheight) {
+              maxheight = Math.ceil(s[1] / 5) * 5;
+            }
+          });
+
+          const keys = ["sexe", "sum", "color"];
+          const values = sexes2D;
+          const objects = values.map((array) => {
+            const object = {};
+
+            keys.forEach((key, i) => (object[key] = array[i]));
+
+            return object;
+          });
+          //JSON.stringify(objects);
+          console.log(objects);
+
+          const xScale = d3
+            .scaleBand()
+            .range([0, width])
+            .domain(objects.map((obj) => obj.sexe))
+            .padding(0.4);
+
+          const yScale = d3
+            .scaleLinear()
+            .range([height, 0])
+            .domain([0, maxheight]);
+
+          const makeYLines = () => d3.axisLeft().scale(yScale);
+
+          chart
+            .append("g")
+            .attr("transform", `translate(0, ${height})`)
+            .call(d3.axisBottom(xScale));
+
+          chart.append("g").call(d3.axisLeft(yScale));
+
+          chart
+            .append("g")
+            .attr("class", "grid")
+            .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
+
+          const barGroups = chart.selectAll().data(objects).enter().append("g");
+
+          barGroups
+            .append("rect")
+            .attr("class", "bar")
+            .attr("x", (g) => xScale(g.sexe))
+            .attr("y", (g) => yScale(g.sum))
+            .style("fill", (g) => g.color)
+            .attr("height", (g) => height - yScale(g.sum))
+            .attr("width", xScale.bandwidth())
+            .on("mouseenter", function (actual, i) {
+              d3.selectAll(".sum").attr("opacity", 0);
+
+              d3.select(this)
+                .transition()
+                .duration(300)
+                .attr("opacity", 0.6)
+                .attr("x", (a) => xScale(a.sexe) - 5)
+                .attr("width", xScale.bandwidth() + 10);
+
+              const y = yScale(actual.sum);
+
+              line = chart
+                .append("line")
+                .attr("id", "limit")
+                .attr("x1", 0)
+                .attr("y1", y)
+                .attr("x2", width)
+                .attr("y2", y);
+
+              barGroups
+                .append("text")
+                .attr("class", "divergence")
+                .attr("x", (a) => xScale(a.sexe) + xScale.bandwidth() / 2)
+                .attr("y", (a) => yScale(a.sum) - 10)
+                .attr("fill", "white")
+                .attr("text-anchor", "middle")
+                .text((a, idx) => {
+                  const divergence = (a.sum - actual.sum).toFixed(1);
+
+                  let text = "";
+                  if (divergence > 0) text += "+";
+                  text += `${divergence}`;
+
+                  return idx !== i ? text : "";
+                });
+            })
+            .on("mouseleave", function () {
+              d3.selectAll(".sum").attr("opacity", 1);
+
+              d3.select(this)
+                .transition()
+                .duration(300)
+                .attr("opacity", 1)
+                .attr("x", (a) => xScale(a.sexe))
+                .attr("width", xScale.bandwidth());
+
+              chart.selectAll("#limit").remove();
+              chart.selectAll(".divergence").remove();
+            });
+
+          barGroups
+            .append("text")
+            .attr("class", "sum")
+            .attr("x", (a) => xScale(a.sexe) + xScale.bandwidth() / 2)
+            .attr("y", (a) => yScale(a.sum) - 10)
+            .attr("text-anchor", "middle")
+            .text((a) => `${a.sum}`);
+
+          svg
+            .append("text")
+            .attr("class", "label")
+            .attr("x", -(height / 2) - margin)
+            .attr("y", margin / 2.4)
+            .attr("transform", "rotate(-90)")
+            .attr("text-anchor", "middle")
+            .text("Le nombre de réponse ");
+
+          svg
+            .append("text")
+            .attr("class", "label")
+            .attr("x", width / 2 + margin)
+            .attr("y", height + margin * 1.7)
+            .attr("text-anchor", "middle")
+            .text("Sexe");
+
+          svg
+            .append("text")
+            .attr("class", "title")
+            .attr("x", width / 2 + margin)
+            .attr("y", 40)
+            .attr("text-anchor", "middle")
+            .text("Le nombre de réponse par sexe");
+
+          svg
+            .append("text")
+            .attr("class", "source")
+            .attr("x", width - margin / 2)
+            .attr("y", height + margin * 1.7)
+            .attr("text-anchor", "start")
+            .text("Source: MNT, 2020");
+        });
+      } else {
+        if (by == "NivEtud") {
+          d3.csv("MNT.csv").then(function (data) {
+            let nivsDup1D = [];
+            let nivs2D = [];
+            let maxheight = 0;
+
+            data.forEach(function (d) {
+              nivsDup1D.push(d["3.Quel est votre niveau d'étude"]);
+            });
+            let nivs1D = Array.from(new Set(nivsDup1D));
+            nivs1D.forEach(function (n) {
+              nivs2D.push([
+                n,
+                0,
+                colors[Math.floor(Math.random() * colors.length)],
+              ]);
+            });
+
+            nivs2D.forEach(function (n) {
+              data.forEach(function (d) {
+                if (d["3.Quel est votre niveau d'étude"] == n[0]) {
+                  n[1] = n[1] + 1;
+                }
+              });
+              if (n[1] > maxheight) {
+                maxheight = Math.ceil(n[1] / 5) * 5;
+              }
+            });
+
+            const keys = ["niv", "sum", "color"];
+            const values = nivs2D;
+            const objects = values.map((array) => {
+              const object = {};
+
+              keys.forEach((key, i) => (object[key] = array[i]));
+
+              return object;
+            });
+            //JSON.stringify(objects);
+            console.log(objects);
+
+            const xScale = d3
+              .scaleBand()
+              .range([0, width])
+              .domain(objects.map((obj) => obj.niv))
+              .padding(0.4);
+
+            const yScale = d3
+              .scaleLinear()
+              .range([height, 0])
+              .domain([0, maxheight]);
+
+            const makeYLines = () => d3.axisLeft().scale(yScale);
+
+            chart
+              .append("g")
+              .attr("transform", `translate(0, ${height})`)
+              .call(d3.axisBottom(xScale));
+
+            chart.append("g").call(d3.axisLeft(yScale));
+
+            chart
+              .append("g")
+              .attr("class", "grid")
+              .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
+
+            const barGroups = chart
+              .selectAll()
+              .data(objects)
+              .enter()
+              .append("g");
+
+            barGroups
+              .append("rect")
+              .attr("class", "bar")
+              .attr("x", (g) => xScale(g.niv))
+              .attr("y", (g) => yScale(g.sum))
+              .style("fill", (g) => g.color)
+              .attr("height", (g) => height - yScale(g.sum))
+              .attr("width", xScale.bandwidth())
+              .on("mouseenter", function (actual, i) {
+                d3.selectAll(".sum").attr("opacity", 0);
+
+                d3.select(this)
+                  .transition()
+                  .duration(300)
+                  .attr("opacity", 0.6)
+                  .attr("x", (a) => xScale(a.niv) - 5)
+                  .attr("width", xScale.bandwidth() + 10);
+
+                const y = yScale(actual.sum);
+
+                line = chart
+                  .append("line")
+                  .attr("id", "limit")
+                  .attr("x1", 0)
+                  .attr("y1", y)
+                  .attr("x2", width)
+                  .attr("y2", y);
+
+                barGroups
+                  .append("text")
+                  .attr("class", "divergence")
+                  .attr("x", (a) => xScale(a.niv) + xScale.bandwidth() / 2)
+                  .attr("y", (a) => yScale(a.sum) - 10)
+                  .attr("fill", "white")
+                  .attr("text-anchor", "middle")
+                  .text((a, idx) => {
+                    const divergence = (a.sum - actual.sum).toFixed(1);
+
+                    let text = "";
+                    if (divergence > 0) text += "+";
+                    text += `${divergence}`;
+
+                    return idx !== i ? text : "";
+                  });
+              })
+              .on("mouseleave", function () {
+                d3.selectAll(".sum").attr("opacity", 1);
+
+                d3.select(this)
+                  .transition()
+                  .duration(300)
+                  .attr("opacity", 1)
+                  .attr("x", (a) => xScale(a.niv))
+                  .attr("width", xScale.bandwidth());
+
+                chart.selectAll("#limit").remove();
+                chart.selectAll(".divergence").remove();
+              });
+
+            barGroups
+              .append("text")
+              .attr("class", "sum")
+              .attr("x", (a) => xScale(a.niv) + xScale.bandwidth() / 2)
+              .attr("y", (a) => yScale(a.sum) - 10)
+              .attr("text-anchor", "middle")
+              .text((a) => `${a.sum}`);
+
+            svg
+              .append("text")
+              .attr("class", "label")
+              .attr("x", -(height / 2) - margin)
+              .attr("y", margin / 2.4)
+              .attr("transform", "rotate(-90)")
+              .attr("text-anchor", "middle")
+              .text("Le nombre de réponse ");
+
+            svg
+              .append("text")
+              .attr("class", "label")
+              .attr("x", width / 2 + margin)
+              .attr("y", height + margin * 1.7)
+              .attr("text-anchor", "middle")
+              .text("les niveaux d'études");
+
+            svg
+              .append("text")
+              .attr("class", "title")
+              .attr("x", width / 2 + margin)
+              .attr("y", 40)
+              .attr("text-anchor", "middle")
+              .text("Le nombre de réponse par niveaux d'études");
+
+            svg
+              .append("text")
+              .attr("class", "source")
+              .attr("x", width - margin / 2)
+              .attr("y", height + margin * 1.7)
+              .attr("text-anchor", "start")
+              .text("Source: MNT, 2020");
+          });
+        } else {
+          if (by == "Activity") {
+            d3.csv("MNT.csv").then(function (data) {
+              let actsDup1D = [];
+              let acts2D = [];
+              let maxheight = 0;
+
+              data.forEach(function (d) {
+                actsDup1D.push(
+                  d["4.Quelles est votre activité  professionnelle"]
+                );
+              });
+              let acts1D = Array.from(new Set(actsDup1D));
+              acts1D.forEach(function (a) {
+                acts2D.push([
+                  a,
+                  0,
+                  colors[Math.floor(Math.random() * colors.length)],
+                ]);
+              });
+
+              acts2D.forEach(function (a) {
+                data.forEach(function (d) {
+                  if (
+                    d["4.Quelles est votre activité  professionnelle"] == a[0]
+                  ) {
+                    a[1] = a[1] + 1;
+                  }
+                });
+                if (a[1] > maxheight) {
+                  maxheight = Math.ceil(a[1] / 5) * 5;
+                }
+              });
+
+              const keys = ["act", "sum", "color"];
+              const values = acts2D;
+              const objects = values.map((array) => {
+                const object = {};
+
+                keys.forEach((key, i) => (object[key] = array[i]));
+
+                return object;
+              });
+              //JSON.stringify(objects);
+              console.log(objects);
+
+              const xScale = d3
+                .scaleBand()
+                .range([0, width])
+                .domain(objects.map((obj) => obj["act"]))
+                .padding(0.4);
+
+              const yScale = d3
+                .scaleLinear()
+                .range([height, 0])
+                .domain([0, maxheight]);
+
+              const makeYLines = () => d3.axisLeft().scale(yScale);
+
+              chart
+                .append("g")
+                .attr("transform", `translate(0, ${height})`)
+                .call(d3.axisBottom(xScale));
+
+              chart.append("g").call(d3.axisLeft(yScale));
+
+              chart
+                .append("g")
+                .attr("class", "grid")
+                .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
+
+              const barGroups = chart
+                .selectAll()
+                .data(objects)
+                .enter()
+                .append("g");
+
+              barGroups
+                .append("rect")
+                .attr("class", "bar")
+                .attr("x", (g) => xScale(g.act))
+                .attr("y", (g) => yScale(g.sum))
+                .style("fill", (g) => g.color)
+                .attr("height", (g) => height - yScale(g.sum))
+                .attr("width", xScale.bandwidth())
+                .on("mouseenter", function (actual, i) {
+                  d3.selectAll(".sum").attr("opacity", 0);
+
+                  d3.select(this)
+                    .transition()
+                    .duration(300)
+                    .attr("opacity", 0.6)
+                    .attr("x", (a) => xScale(a.act) - 5)
+                    .attr("width", xScale.bandwidth() + 10);
+
+                  const y = yScale(actual.sum);
+
+                  line = chart
+                    .append("line")
+                    .attr("id", "limit")
+                    .attr("x1", 0)
+                    .attr("y1", y)
+                    .attr("x2", width)
+                    .attr("y2", y);
+
+                  barGroups
+                    .append("text")
+                    .attr("class", "divergence")
+                    .attr("x", (a) => xScale(a.act) + xScale.bandwidth() / 2)
+                    .attr("y", (a) => yScale(a.sum) - 10)
+                    .attr("fill", "white")
+                    .attr("text-anchor", "middle")
+                    .text((a, idx) => {
+                      const divergence = (a.sum - actual.sum).toFixed(1);
+
+                      let text = "";
+                      if (divergence > 0) text += "+";
+                      text += `${divergence}`;
+
+                      return idx !== i ? text : "";
+                    });
+                })
+                .on("mouseleave", function () {
+                  d3.selectAll(".sum").attr("opacity", 1);
+
+                  d3.select(this)
+                    .transition()
+                    .duration(300)
+                    .attr("opacity", 1)
+                    .attr("x", (a) => xScale(a.act))
+                    .attr("width", xScale.bandwidth());
+
+                  chart.selectAll("#limit").remove();
+                  chart.selectAll(".divergence").remove();
+                });
+
+              barGroups
+                .append("text")
+                .attr("class", "sum")
+                .attr("x", (a) => xScale(a.act) + xScale.bandwidth() / 2)
+                .attr("y", (a) => yScale(a.sum) - 10)
+                .attr("text-anchor", "middle")
+                .text((a) => `${a.sum}`);
+
+              svg
+                .append("text")
+                .attr("class", "label")
+                .attr("x", -(height / 2) - margin)
+                .attr("y", margin / 2.4)
+                .attr("transform", "rotate(-90)")
+                .attr("text-anchor", "middle")
+                .text("Le nombre de réponse ");
+
+              svg
+                .append("text")
+                .attr("class", "label")
+                .attr("x", width / 2 + margin)
+                .attr("y", height + margin * 1.7)
+                .attr("text-anchor", "middle")
+                .text("Activité professionnelle");
+
+              svg
+                .append("text")
+                .attr("class", "title")
+                .attr("x", width / 2 + margin)
+                .attr("y", 40)
+                .attr("text-anchor", "middle")
+                .text("Le nombre de réponse par activité profesionnelle");
+
+              svg
+                .append("text")
+                .attr("class", "source")
+                .attr("x", width - margin / 2)
+                .attr("y", height + margin * 1.7)
+                .attr("text-anchor", "start")
+                .text("Source: MNT, 2020");
+            });
+          }
+        }
+      }
+    }
+  }
 }
 
 function valid() {
-  AvgAgeByRegion();
+  var avrgAge = document.getElementById("AvgAge");
+  var nbrResp = document.getElementById("NbrResp");
+  var propDis = document.getElementById("PropDis");
+
+  var byRegion = document.getElementById("Region");
+  var bySexe = document.getElementById("Sexe");
+  var byNivEtud = document.getElementById("NivEtud");
+  var byActivity = document.getElementById("Activity");
+
+  if (avrgAge.checked) {
+    if (byRegion.checked) {
+      Draw("AvgAge", "Region");
+    } else {
+      if (bySexe.checked) {
+        Draw("AvgAge", "Sexe");
+      } else {
+        if (byNivEtud.checked) {
+          Draw("AvgAge", "NivEtud");
+        } else {
+          if (byActivity.checked) {
+            Draw("AvgAge", "Activity");
+          }
+        }
+      }
+    }
+  }
+
+  if (nbrResp.checked) {
+    if (byRegion.checked) {
+      Draw("NbrResp", "Region");
+    } else {
+      if (bySexe.checked) {
+        Draw("NbrResp", "Sexe");
+      } else {
+        if (byNivEtud.checked) {
+          Draw("NbrResp", "NivEtud");
+        } else {
+          if (byActivity.checked) {
+            Draw("NbrResp", "Activity");
+          }
+        }
+      }
+    }
+  }
+
+  if (propDis.checked) {
+    if (byRegion.checked) {
+      Draw("PropDis", "Region");
+    } else {
+      if (bySexe.checked) {
+        Draw("PropDis", "Sexe");
+      } else {
+        if (byNivEtud.checked) {
+          Draw("PropDis", "NivEtud");
+        } else {
+          if (byActivity.checked) {
+            Draw("PropDis", "Activity");
+          }
+        }
+      }
+    }
+  }
 }
