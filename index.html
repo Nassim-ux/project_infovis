@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>Projet InfoVis</title>
 
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" type="text/css" href="style.css" />
 
     <link
       href="https://fonts.googleapis.com/css?family=Open+Sans"
@@ -20,51 +20,73 @@
         <svg />
       </div>
     </div>
-    <div id="controls" width="50%">
-      <fieldset>
-        <legend>Veuillez choisir les informations à visualiser</legend>
-        <input
-          id="AvgAgeByRegion"
-          type="checkbox"
-          name="group1[]"
-          value="AvgAgeByRegion"
-        />
-        Moyenne d'age par région<br />
-        <input
-          id="PropBySexe"
-          type="checkbox"
-          name="group1[]"
-          value="PropBySexe"
-        />
-        Pourcentage de réponses par sexe<br />
-        <input
-          id="PropDisByRegion"
-          type="checkbox"
-          name="group1[]"
-          value="PropDisByRegion"
-        />
-        Pourcentage des maladies (<output id="output" for="Disvar"></output>)
-        par région
-        <p>
-          <label>la maladie : </label>
-          <input
-            type="range"
-            list="diseases"
-            id="Disvar"
-            value="0"
-            min="1"
-            max="3"
-            step="1"
-          />
-          <datalist id="diseases">
-            <option value="1" label="Diabète"></option>
-            <option value="2" label="Asthme"></option>
-            <option value="3" label="Tension"></option>
-          </datalist>
-        </p>
-        <br /><br />
-        <button onclick="valid()">Valider</button>
-      </fieldset>
+    <div id="controls">
+      <table style="width: 100%">
+        <td id="ctrlL" style="width: 45%; color: #fff">
+          <fieldset>
+            <legend>Information sur l'axe des Y</legend>
+            <input id="AvgAge" type="checkbox" name="group1[]" value="AvgAge" />
+            Moyenne d'âge <br />
+            <input
+              id="NbrPersn"
+              type="checkbox"
+              name="group1[]"
+              value="NbrPersn"
+            />
+            Nombre de réponses<br />
+            <input
+              id="PropDis"
+              type="checkbox"
+              name="group1[]"
+              value="PropDis"
+            />
+            Pourcentage des maladies (<output id="output" for="Disvar"></output
+            >)
+            <p>
+              <label>la maladie : </label>
+              <input
+                type="range"
+                list="diseases"
+                id="Disvar"
+                value="0"
+                min="1"
+                max="3"
+                step="1"
+              />
+              <datalist id="diseases" style="dispaly: none">
+                <option value="1" label="Diabète"></option>
+                <option value="2" label="Asthme"></option>
+                <option value="3" label="Tension"></option>
+              </datalist>
+            </p>
+          </fieldset>
+        </td>
+        <td style="text-align: center; color: #fff; width: 5%">Par</td>
+        <td id="ctrlR" style="width: 45%; color: #fff">
+          <fieldset>
+            <legend>Information sur l'axe des X</legend>
+            <input id="Region" type="checkbox" name="group2[]" value="Region" />
+            Région (wilaya) <br />
+            <input id="Sexe" type="checkbox" name="group2[]" value="Sexe" />
+            Sexe <br />
+            <input
+              id="NivEtud"
+              type="checkbox"
+              name="group2[]"
+              value="NivEtud"
+            />
+            Niveau d'étude <br />
+            <input
+              id="Activity"
+              type="checkbox"
+              name="group2[]"
+              value="Activity"
+            />
+            Activité <br />
+          </fieldset>
+        </td>
+        <button id="valid" onclick="valid()">Valider</button>
+      </table>
     </div>
   </body>
   <script src="script.js"></script>

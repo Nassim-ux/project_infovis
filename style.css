@@ -7,9 +7,27 @@ div#layout {
 }
 
 div#controls {
-  padding-top: 20px;
+  padding-top: 5px !important;
   background-color: #445a77;
   color: #fff;
+  display: flex;
+}
+
+div#controls > table > td#ctrlL,
+div#controls > table > td#ctrlR {
+  color: #fff;
+}
+
+div#controls > table > button#valid {
+  transition-duration: 0.4s;
+  background-color: white;
+  color: black;
+  border: 2px solid #4caf50;
+}
+
+div#controls > table > button#valid:hover {
+  background-color: #4caf50; /* Green */
+  color: white;
 }
 
 div#container {

@@ -451,7 +451,7 @@ function AvgAgeByRegion() {
       .domain(objects.map((obj) => obj.wilaya))
       .padding(0.4);
 
-    const yScale = d3.scaleLinear().range([height, 0]).domain([0, 50]);
+    const yScale = d3.scaleLinear().range([height, 0]).domain([0, 40]);
 
     const makeYLines = () => d3.axisLeft().scale(yScale);
 
