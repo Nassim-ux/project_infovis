@@ -5,14 +5,16 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>Projet InfoVis</title>
 
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="css/style.css" />
 
     <link
       href="https://fonts.googleapis.com/css?family=Open+Sans"
       rel="stylesheet"
     />
-    <script src="https://d3js.org/d3.v5.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
+    <!-- <script src="https://d3js.org/d3.v5.min.js"></script> -->
+    <script src="bib/d3.min.js"></script>
+    <script src="bib/jquery-3.5.0.js"></script>
+    <!-- <script src="https://code.jquery.com/jquery-3.5.0.js"></script> -->
   </head>
   <body>
     <div id="layout">
@@ -21,7 +23,25 @@
       </div>
     </div>
     <div id="controls">
-      <table style="width: 100%">
+      <table style="width: 100%; padding-top: 10px">
+        <tr>
+          <td colspan="3">
+            <hr
+              style="
+                margin-left: 0px;
+                margin-bottom: -20px;
+                height: 2px;
+                width: 88%;
+                border-width: 0;
+                color: #fff;
+                background-color: #fff;
+              "
+            />
+            <button class="button" id="valid" onclick="valid()">
+              Dessiner
+            </button>
+          </td>
+        </tr>
         <tr>
           <td id="ctrlL" style="width: 45%; color: #fff">
             <fieldset>
@@ -112,7 +132,7 @@
         <tr>
           <td id="ctrlL" style="width: 45%; color: #fff">
             <fieldset>
-              <legend>Approfondi</legend>
+              <legend>Approfondi (Grouped Bar Char)</legend>
 
               <input id="Tabac" type="checkbox" name="group1[]" value="Tabac" />
               Consomation de tabac<br />
@@ -142,9 +162,8 @@
             </fieldset>
           </td>
         </tr>
-        <button id="valid" onclick="valid()">Valider</button>
       </table>
     </div>
   </body>
-  <script src="script.js"></script>
+  <script src="js/script.js"></script>
 </html>
