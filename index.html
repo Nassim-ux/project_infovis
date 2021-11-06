@@ -31,15 +31,24 @@
                 margin-left: 0px;
                 margin-bottom: -20px;
                 height: 2px;
-                width: 88%;
+                width: 80%;
                 border-width: 0;
                 color: #fff;
                 background-color: #fff;
               "
             />
+
             <button class="button" id="valid" onclick="valid()">
               Dessiner
             </button>
+            <div class="dropdown">
+              <button class="dropbtn">Type</button>
+              <div class="dropdown-content">
+                <a class="link linkbar" href="#">Bar Chart</a>
+                <a class="link linkpie" href="#">Pie Chart</a>
+              </div>
+            </div>
+            <h3 class="typeT">Diagramme de barres</h3>
           </td>
         </tr>
         <tr>
@@ -83,6 +92,7 @@
                   max="3"
                   step="1"
                 />
+                <label class="hint"> (glisser pour changer de maladie) </label>
                 <datalist id="diseases">
                   <option value="1" label="Diabète"></option>
                   <option value="2" label="Asthme"></option>

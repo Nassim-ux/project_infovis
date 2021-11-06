@@ -51,7 +51,7 @@ const sample = [
   },
 ];
 
-const colors = [
+const colorsv2 = [
   "#63b598",
   "#ce7d78",
   "#ea9e70",
@@ -333,21 +333,104 @@ const colors = [
   "#dce77a",
   "#77ecca",
 ];
-// colors[Math.floor(Math.random() * colors.length)
 
+const colors = [
+  "#7400b8",
+  "#5e60ce",
+  "#800f2f",
+  "#c9184a",
+  "#f94144",
+  "#f3722c",
+  "#f8961e",
+  "#f9844a",
+  "#f9c74f",
+  "#90be6d",
+  "#43aa8b",
+  "#4d908e",
+  "#577590",
+  "#277da1",
+  "#74c69d",
+  "#56cfe1",
+  "#80ffdb",
+  "#ff8fa3",
+  "#388dfb",
+  "#1fda9a",
+];
+
+const hoverColor = "#eec42d";
+// colors[Math.floor(Math.random() * colors.length)
+var type = "bar";
 const svg = d3.select("svg");
 const svgContainer = d3.select("#container");
 
+$(".link").click(function (event) {
+  event.preventDefault();
+});
+
+$(".linkbar").click(function (event) {
+  event.preventDefault();
+  type = "bar";
+
+  $(".typeT").text("Diagramme de barres");
+
+  var tabac = document.getElementById("Tabac");
+  var sport = document.getElementById("Sport");
+  var alchool = document.getElementById("Alchool");
+  var consoFruit = document.getElementById("ConsoFruit");
+  var consoLeg = document.getElementById("ConsoLeg");
+
+  tabac.disabled = false;
+  sport.disabled = false;
+  alchool.disabled = false;
+  consoFruit.disabled = false;
+  consoLeg.disabled = false;
+});
+
+$(".linkpie").click(function (event) {
+  event.preventDefault();
+  type = "pie";
+
+  $(".typeT").text("Diagramme circulaire");
+
+  var tabac = document.getElementById("Tabac");
+  var sport = document.getElementById("Sport");
+  var alchool = document.getElementById("Alchool");
+  var consoFruit = document.getElementById("ConsoFruit");
+  var consoLeg = document.getElementById("ConsoLeg");
+
+  tabac.disabled = true;
+  sport.disabled = true;
+  alchool.disabled = true;
+  consoFruit.disabled = true;
+  consoLeg.disabled = true;
+});
+
 const margin = 80;
-var margins = { top: 20, right: 20, bottom: 30, left: 40 },
-  width2 = 1400 - margins.left - margins.right,
-  height2 = 600 - margins.top - margins.bottom;
+
 const width = 1400 - 2 * margin;
 const height = 600 - 2 * margin;
 
-Draw("NbrResp", "Region");
+if (type == "bar") {
+  Draw("NbrResp", "Region", 0);
+} else {
+  DrawP("NbrResp", "Region", 0);
+}
 
 ("use strict");
+
+const defInfo = document.getElementById("NbrResp");
+defInfo.checked = true;
+
+$('input[name="' + defInfo.name + '"]')
+  .not(defInfo)
+  .prop("checked", false);
+
+const defBy = document.getElementById("Region");
+defBy.checked = true;
+
+$('input[name="' + defBy.name + '"]')
+  .not(defBy)
+  .prop("checked", false);
 
 const range = document.querySelector("input[type=range]");
 const output = document.querySelector("output");
@@ -378,6 +461,2989 @@ $('input[type="checkbox"]').on("change", function () {
     .prop("checked", false);
 });
 
+function DrawP(what, by, grouped) {
+  svg.selectAll("*").remove();
+
+  if (!grouped) {
+    if (what == "AvgAge") {
+      if (by == "Region") {
+        d3.csv("MNT.csv").then(function (data) {
+          let regionsDup1D = [];
+          let regions2D = [];
+          let maxheight = 0;
+
+          data.forEach(function (d) {
+            regionsDup1D.push(d["2.wilaya"]);
+          });
+          let regions1D = Array.from(new Set(regionsDup1D));
+          regions1D.forEach(function (w) {
+            regions2D.push([w, 0, 0, 0, 0, 0, "#4ea8de"]);
+          });
+
+          regions2D.forEach(function (w) {
+            data.forEach(function (d) {
+              if (d["2.wilaya"] == w[0]) {
+                w[1] = w[1] + 1;
+                w[2] = w[2] + parseInt(d["2.Quel âge avez-vous ?"]);
+              }
+              w[4] = w[4] + 1;
+              w[3] = (w[2] / w[1]).toFixed(1);
+            });
+            w[5] = ((w[1] / w[4]) * 100).toFixed(1);
+            if (w[3] > maxheight) {
+              maxheight = Math.ceil(w[3] / 5) * 5;
+            }
+          });
+
+          const keys = [
+            "wilaya",
+            "sum",
+            "sumAge",
+            "avrg",
+            "sumW",
+            "prct",
+            "color",
+          ];
+          const values = regions2D;
+          const objects = values.map((array) => {
+            const object = {};
+
+            keys.forEach((key, i) => (object[key] = array[i]));
+
+            return object;
+          });
+          //JSON.stringify(objects);
+          console.log(objects);
+
+          var color = d3
+            .scaleOrdinal()
+            .domain(objects.map((obj) => obj.wilaya))
+            .range(colors);
+
+          const widthP = 1400,
+            heightP = 600,
+            radius = 200,
+            innerradius = 0;
+
+          var arc = d3.arc().outerRadius(radius).innerRadius(innerradius);
+
+          const chart = svg
+            .append("g")
+            .attr("width", widthP)
+            .attr("height", heightP)
+            .append("g")
+            .attr("class", "piechart")
+            .attr(
+              "transform",
+              "translate(" + widthP / 2 + "," + heightP / 2 + ")"
+            );
+          var pie = d3
+            .pie()
+            .sort(null)
+            .value(function (d) {
+              return d.avrg;
+            });
+
+          var segments = chart.append("g").attr("class", "segments");
+
+          var slices = segments
+            .selectAll(".arc")
+            .data(pie(objects))
+            .enter()
+            .append("g")
+            .attr("class", "arc");
+
+          slices
+            .append("path")
+            .attr("class", "path")
+            .attr("d", arc)
+            .attr("fill", function (d, i) {
+              return color(i);
+            })
+            .transition()
+            .attrTween("d", function (d) {
+              var i = d3.interpolate(d.startAngle + 0.1, d.endAngle);
+              return function (t) {
+                d.endAngle = i(t);
+                return arc(d);
+              };
+            });
+          slices
+            .selectAll(".path")
+            .attr("stroke", "white")
+            .attr("stroke-width", "1")
+            .attr("stroke-linejoin", "round");
+
+          tooltip = d3
+            .select("#layout")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("text-align", "left")
+            .style("visibility", "hidden")
+            .style("padding", "10px")
+            .style("background", "rgba(0,0,0,0.6)")
+            .style("border-radius", "4px")
+            .style("color", "#fff")
+            .text("a simple tooltip");
+
+          // draw label
+          slices
+            .append("text")
+            .attr("transform", function (d) {
+              d.innerRadius = 0;
+              d.outerRadius = radius;
+              return "translate(" + arc.centroid(d) + ")";
+            })
+            .attr("text-anchor", "middle")
+            .text(function (d, i) {
+              return d.data.avrg;
+            });
+
+          slices
+            .on("mouseover", function (d) {
+              console.log(d);
+              d3.select(this)
+                .transition()
+                .duration(600)
+                .attr(
+                  "transform",
+                  "translate(" +
+                    arc.centroid(d)[0] / 7 +
+                    "," +
+                    arc.centroid(d)[1] / 7 +
+                    ")"
+                );
+              tooltip
+                .html(
+                  "Wilaya: " +
+                    d.data.wilaya +
+                    "<br>" +
+                    "Nombre de réponses: " +
+                    d.data.sum +
+                    "<br>" +
+                    "total des réponses: " +
+                    d.data.sumW +
+                    "<br>" +
+                    "Moyenne: " +
+                    d.data.avrg +
+                    "<br>" +
+                    "Pourcentage: " +
+                    d.data.prct +
+                    " %"
+                )
+                .style("visibility", "visible");
+            })
+            .on("mousemove", function (d) {
+              tooltip
+                .style("top", d3.event.pageY - 10 + "px")
+                .style("left", d3.event.pageX + 10 + "px");
+            });
+
+          slices
+            .on("mouseout", function () {
+              d3.select(this)
+                .transition()
+                .duration(500)
+                .attr("transform", "translate(0, 0)");
+            })
+            .on("mouseleave", function () {
+              tooltip.html(``).style("visibility", "hidden");
+            });
+
+          svg
+            .append("text")
+            .attr("class", "title")
+            .attr("x", width / 2 + margin)
+            .attr("y", 40)
+            .attr("text-anchor", "middle")
+            .text("Les moyennes d'âge par wilaya");
+
+          svg
+            .append("text")
+            .attr("class", "title")
+            .attr("x", 40 + margin)
+            .attr("y", 40)
+            .attr("text-anchor", "middle")
+            .text("Diagramme circulaire");
+
+          svg
+            .append("text")
+            .attr("class", "source")
+            .attr("x", width - margin / 2)
+            .attr("y", height + margin * 1.7)
+            .attr("text-anchor", "start")
+            .text("Source: MNT, 2020");
+
+          //Legend
+          var legend = svg
+            .selectAll(".legend")
+            .data(
+              objects.map(function (d) {
+                return d.wilaya;
+              })
+            )
+            .enter()
+            .append("g")
+            .attr("class", "legend")
+            .attr("transform", function (d, i) {
+              return "translate(0," + i * 20 + ")";
+            })
+            .style("opacity", "0");
+
+          legend
+            .append("rect")
+            .attr("y", margin)
+            .attr("x", width - margin - 18)
+            .attr("width", 18)
+            .attr("height", 18)
+            .style("fill", function (d, i) {
+              return color(i);
+            });
+
+          legend
+            .append("text")
+            .attr("x", width - margin - 24)
+            .attr("y", margin + 9)
+            .attr("dy", ".35em")
+            .style("text-anchor", "end")
+            .text(function (d) {
+              return d;
+            });
+
+          legend
+            .transition()
+            .duration(500)
+            .delay(function (d, i) {
+              return 1300 + 100 * i;
+            })
+            .style("opacity", "1");
+        });
+      } else {
+        if (by == "Sexe") {
+          d3.csv("MNT.csv").then(function (data) {
+            let sexesDup1D = [];
+            let sexes2D = [];
+            let maxheight = 0;
+
+            data.forEach(function (d) {
+              sexesDup1D.push(d["1.sexe"]);
+            });
+            let sexes1D = Array.from(new Set(sexesDup1D));
+            sexes1D.forEach(function (s) {
+              sexes2D.push([s, 0, 0, 0, 0, 0, "#4ea8de"]);
+            });
+
+            sexes2D.forEach(function (s) {
+              data.forEach(function (d) {
+                if (d["1.sexe"] == s[0]) {
+                  s[1] = s[1] + 1;
+                  s[2] = s[2] + parseInt(d["2.Quel âge avez-vous ?"]);
+                }
+                s[4] = s[4] + 1;
+                s[3] = (s[2] / s[1]).toFixed(1);
+              });
+              s[5] = ((s[1] / s[4]) * 100).toFixed(1);
+              if (s[3] > maxheight) {
+                maxheight = Math.ceil(s[3] / 2) * 2;
+              }
+            });
+
+            const keys = [
+              "sexe",
+              "sum",
+              "sumAge",
+              "avrg",
+              "sumW",
+              "prct",
+              "color",
+            ];
+            const values = sexes2D;
+            const objects = values.map((array) => {
+              const object = {};
+
+              keys.forEach((key, i) => (object[key] = array[i]));
+
+              return object;
+            });
+            //JSON.stringify(objects);
+            console.log(objects);
+
+            var color = d3
+              .scaleOrdinal()
+              .domain(objects.map((obj) => obj.sexe))
+              .range(colors);
+
+            const widthP = 1400,
+              heightP = 600,
+              radius = 200,
+              innerradius = 0;
+
+            var arc = d3.arc().outerRadius(radius).innerRadius(innerradius);
+
+            const chart = svg
+              .append("g")
+              .attr("width", widthP)
+              .attr("height", heightP)
+              .append("g")
+              .attr("class", "piechart")
+              .attr(
+                "transform",
+                "translate(" + widthP / 2 + "," + heightP / 2 + ")"
+              );
+            var pie = d3
+              .pie()
+              .sort(null)
+              .value(function (d) {
+                return d.avrg;
+              });
+
+            var segments = chart.append("g").attr("class", "segments");
+
+            var slices = segments
+              .selectAll(".arc")
+              .data(pie(objects))
+              .enter()
+              .append("g")
+              .attr("class", "arc");
+
+            slices
+              .append("path")
+              .attr("d", arc)
+              .attr("stroke", "white")
+              .attr("stroke-width", "1")
+              .attr("stroke-linejoin", "round")
+              .attr("fill", function (d, i) {
+                return color(i);
+              })
+              .transition()
+              .attrTween("d", function (d) {
+                var i = d3.interpolate(d.startAngle + 0.1, d.endAngle);
+                return function (t) {
+                  d.endAngle = i(t);
+                  return arc(d);
+                };
+              });
+
+            // draw label
+            slices
+              .append("text")
+              .attr("transform", function (d) {
+                d.innerRadius = 0;
+                d.outerRadius = radius;
+                return "translate(" + arc.centroid(d) + ")";
+              })
+              .attr("text-anchor", "middle")
+              .text(function (d, i) {
+                return d.data.avrg;
+              });
+
+            tooltip = d3
+              .select("#layout")
+              .append("div")
+              .attr("class", "tooltip")
+              .style("position", "absolute")
+              .style("z-index", "10")
+              .style("text-align", "left")
+              .style("visibility", "hidden")
+              .style("padding", "10px")
+              .style("background", "rgba(0,0,0,0.6)")
+              .style("border-radius", "4px")
+              .style("color", "#fff")
+              .text("a simple tooltip");
+
+            slices
+              .on("mouseover", function (d) {
+                console.log(d);
+                d3.select(this)
+                  .transition()
+                  .duration(600)
+                  .attr(
+                    "transform",
+                    "translate(" +
+                      arc.centroid(d)[0] / 7 +
+                      "," +
+                      arc.centroid(d)[1] / 7 +
+                      ")"
+                  );
+                tooltip
+                  .html(
+                    "Sexe: " +
+                      d.data.sexe +
+                      "<br>" +
+                      "Nombre de réponses: " +
+                      d.data.sum +
+                      "<br>" +
+                      "total des réponses: " +
+                      d.data.sumW +
+                      "<br>" +
+                      "Moyenne: " +
+                      d.data.avrg +
+                      "<br>" +
+                      "Pourcentage: " +
+                      d.data.prct +
+                      " %"
+                  )
+                  .style("visibility", "visible");
+              })
+              .on("mousemove", function (d) {
+                tooltip
+                  .style("top", d3.event.pageY - 10 + "px")
+                  .style("left", d3.event.pageX + 10 + "px");
+              });
+
+            slices
+              .on("mouseout", function () {
+                d3.select(this)
+                  .transition()
+                  .duration(500)
+                  .attr("transform", "translate(0, 0)");
+              })
+              .on("mouseleave", function () {
+                tooltip.html(``).style("visibility", "hidden");
+              });
+
+            svg
+              .append("text")
+              .attr("class", "title")
+              .attr("x", width / 2 + margin)
+              .attr("y", 40)
+              .attr("text-anchor", "middle")
+              .text("Les moyennes d'âge par sexe");
+
+            svg
+              .append("text")
+              .attr("class", "source")
+              .attr("x", width - margin / 2)
+              .attr("y", height + margin * 1.7)
+              .attr("text-anchor", "start")
+              .text("Source: MNT, 2020");
+
+            svg
+              .append("text")
+              .attr("class", "title")
+              .attr("x", 40 + margin)
+              .attr("y", 40)
+              .attr("text-anchor", "middle")
+              .text("Diagramme circulaire");
+
+            //Legend
+            var legend = svg
+              .selectAll(".legend")
+              .data(
+                objects.map(function (d) {
+                  return d.sexe;
+                })
+              )
+              .enter()
+              .append("g")
+              .attr("class", "legend")
+              .attr("transform", function (d, i) {
+                return "translate(0," + i * 20 + ")";
+              })
+              .style("opacity", "0");
+
+            legend
+              .append("rect")
+              .attr("y", margin)
+              .attr("x", width - margin - 18)
+              .attr("width", 18)
+              .attr("height", 18)
+              .style("fill", function (d, i) {
+                return color(i);
+              });
+
+            legend
+              .append("text")
+              .attr("x", width - margin - 24)
+              .attr("y", margin + 9)
+              .attr("dy", ".35em")
+              .style("text-anchor", "end")
+              .text(function (d) {
+                return d;
+              });
+
+            legend
+              .transition()
+              .duration(500)
+              .delay(function (d, i) {
+                return 1300 + 100 * i;
+              })
+              .style("opacity", "1");
+          });
+        } else {
+          if (by == "NivEtud") {
+            d3.csv("MNT.csv").then(function (data) {
+              let nivsDup1D = [];
+              let nivs2D = [];
+              let maxheight = 0;
+
+              data.forEach(function (d) {
+                nivsDup1D.push(d["3.Quel est votre niveau d'étude"]);
+              });
+              let nivs1D = Array.from(new Set(nivsDup1D));
+              nivs1D.forEach(function (n) {
+                nivs2D.push([n, 0, 0, 0, 0, 0, "#4ea8de"]);
+              });
+
+              nivs2D.forEach(function (n) {
+                data.forEach(function (d) {
+                  if (d["3.Quel est votre niveau d'étude"] == n[0]) {
+                    n[1] = n[1] + 1;
+                    n[2] = n[2] + parseInt(d["2.Quel âge avez-vous ?"]);
+                  }
+                  n[4] = n[4] + 1;
+                  n[3] = (n[2] / n[1]).toFixed(1);
+                });
+                n[5] = ((n[1] / n[4]) * 100).toFixed(1);
+                if (n[3] > maxheight) {
+                  maxheight = Math.ceil(n[3] / 5) * 5;
+                }
+              });
+
+              const keys = [
+                "niv",
+                "sum",
+                "sumAge",
+                "avrg",
+                "sumW",
+                "prct",
+                "color",
+              ];
+              const values = nivs2D;
+              const objects = values.map((array) => {
+                const object = {};
+
+                keys.forEach((key, i) => (object[key] = array[i]));
+
+                return object;
+              });
+              //JSON.stringify(objects);
+              console.log(objects);
+
+              var color = d3
+                .scaleOrdinal()
+                .domain(objects.map((obj) => obj.niv))
+                .range(colors);
+
+              const widthP = 1400,
+                heightP = 600,
+                radius = 200,
+                innerradius = 0;
+
+              var arc = d3.arc().outerRadius(radius).innerRadius(innerradius);
+
+              const chart = svg
+                .append("g")
+                .attr("width", widthP)
+                .attr("height", heightP)
+                .append("g")
+                .attr("class", "piechart")
+                .attr(
+                  "transform",
+                  "translate(" + widthP / 2 + "," + heightP / 2 + ")"
+                );
+              var pie = d3
+                .pie()
+                .sort(null)
+                .value(function (d) {
+                  return d.avrg;
+                });
+
+              var segments = chart.append("g").attr("class", "segments");
+
+              var slices = segments
+                .selectAll(".arc")
+                .data(pie(objects))
+                .enter()
+                .append("g")
+                .attr("class", "arc");
+
+              slices
+                .append("path")
+                .attr("d", arc)
+                .attr("stroke", "white")
+                .attr("stroke-width", "1")
+                .attr("stroke-linejoin", "round")
+                .attr("fill", function (d, i) {
+                  return color(i);
+                })
+                .transition()
+                .attrTween("d", function (d) {
+                  var i = d3.interpolate(d.startAngle + 0.1, d.endAngle);
+                  return function (t) {
+                    d.endAngle = i(t);
+                    return arc(d);
+                  };
+                });
+
+              // draw label
+              slices
+                .append("text")
+                .attr("transform", function (d) {
+                  d.innerRadius = 0;
+                  d.outerRadius = radius;
+                  return "translate(" + arc.centroid(d) + ")";
+                })
+                .attr("text-anchor", "middle")
+                .text(function (d, i) {
+                  return d.data.avrg;
+                });
+
+              tooltip = d3
+                .select("#layout")
+                .append("div")
+                .attr("class", "tooltip")
+                .style("position", "absolute")
+                .style("z-index", "10")
+                .style("text-align", "left")
+                .style("visibility", "hidden")
+                .style("padding", "10px")
+                .style("background", "rgba(0,0,0,0.6)")
+                .style("border-radius", "4px")
+                .style("color", "#fff")
+                .text("a simple tooltip");
+
+              slices
+                .on("mouseover", function (d) {
+                  console.log(d);
+                  d3.select(this)
+                    .transition()
+                    .duration(600)
+                    .attr(
+                      "transform",
+                      "translate(" +
+                        arc.centroid(d)[0] / 7 +
+                        "," +
+                        arc.centroid(d)[1] / 7 +
+                        ")"
+                    );
+                  tooltip
+                    .html(
+                      "Niveau d'étude: " +
+                        d.data.niv +
+                        "<br>" +
+                        "Nombre de réponses: " +
+                        d.data.sum +
+                        "<br>" +
+                        "total des réponses: " +
+                        d.data.sumW +
+                        "<br>" +
+                        "Moyenne: " +
+                        d.data.avrg +
+                        "<br>" +
+                        "Pourcentage: " +
+                        d.data.prct +
+                        " %"
+                    )
+                    .style("visibility", "visible");
+                })
+                .on("mousemove", function (d) {
+                  tooltip
+                    .style("top", d3.event.pageY - 10 + "px")
+                    .style("left", d3.event.pageX + 10 + "px");
+                });
+
+              slices
+                .on("mouseout", function () {
+                  d3.select(this)
+                    .transition()
+                    .duration(500)
+                    .attr("transform", "translate(0, 0)");
+                })
+                .on("mouseleave", function () {
+                  tooltip.html(``).style("visibility", "hidden");
+                });
+
+              svg
+                .append("text")
+                .attr("class", "title")
+                .attr("x", width / 2 + margin)
+                .attr("y", 40)
+                .attr("text-anchor", "middle")
+                .text("Les moyennes d'âge par niveau d'étude");
+
+              svg
+                .append("text")
+                .attr("class", "source")
+                .attr("x", width - margin / 2)
+                .attr("y", height + margin * 1.7)
+                .attr("text-anchor", "start")
+                .text("Source: MNT, 2020");
+
+              svg
+                .append("text")
+                .attr("class", "title")
+                .attr("x", 40 + margin)
+                .attr("y", 40)
+                .attr("text-anchor", "middle")
+                .text("Diagramme circulaire");
+
+              //Legend
+              var legend = svg
+                .selectAll(".legend")
+                .data(
+                  objects.map(function (d) {
+                    return d.niv;
+                  })
+                )
+                .enter()
+                .append("g")
+                .attr("class", "legend")
+                .attr("transform", function (d, i) {
+                  return "translate(0," + i * 20 + ")";
+                })
+                .style("opacity", "0");
+
+              legend
+                .append("rect")
+                .attr("y", margin)
+                .attr("x", width - margin - 18)
+                .attr("width", 18)
+                .attr("height", 18)
+                .style("fill", function (d, i) {
+                  return color(i);
+                });
+
+              legend
+                .append("text")
+                .attr("x", width - margin - 24)
+                .attr("y", margin + 9)
+                .attr("dy", ".35em")
+                .style("text-anchor", "end")
+                .text(function (d) {
+                  return d;
+                });
+
+              legend
+                .transition()
+                .duration(500)
+                .delay(function (d, i) {
+                  return 1300 + 100 * i;
+                })
+                .style("opacity", "1");
+            });
+          } else {
+            if (by == "Activity") {
+              d3.csv("MNT.csv").then(function (data) {
+                let actsDup1D = [];
+                let acts2D = [];
+                let maxheight = 0;
+
+                data.forEach(function (d) {
+                  actsDup1D.push(
+                    d["4.Quelles est votre activité  professionnelle"]
+                  );
+                });
+                let acts1D = Array.from(new Set(actsDup1D));
+                acts1D.forEach(function (a) {
+                  acts2D.push([a, 0, 0, 0, 0, 0, "#4ea8de"]);
+                });
+
+                acts2D.forEach(function (a) {
+                  data.forEach(function (d) {
+                    if (
+                      d["4.Quelles est votre activité  professionnelle"] == a[0]
+                    ) {
+                      a[1] = a[1] + 1;
+                      a[2] = a[2] + parseInt(d["2.Quel âge avez-vous ?"]);
+                    }
+                    a[4] = a[4] + 1;
+                    a[3] = (a[2] / a[1]).toFixed(1);
+                  });
+                  a[5] = ((a[1] / a[4]) * 100).toFixed(1);
+                  if (a[3] > maxheight) {
+                    maxheight = Math.ceil(a[3] / 5) * 5;
+                  }
+                });
+
+                const keys = [
+                  "act",
+                  "sum",
+                  "sumAge",
+                  "avrg",
+                  "sumW",
+                  "prct",
+                  "color",
+                ];
+                const values = acts2D;
+                const objects = values.map((array) => {
+                  const object = {};
+
+                  keys.forEach((key, i) => (object[key] = array[i]));
+
+                  return object;
+                });
+                //JSON.stringify(objects);
+                console.log(objects);
+
+                var color = d3
+                  .scaleOrdinal()
+                  .domain(objects.map((obj) => obj.act))
+                  .range(colors);
+
+                const widthP = 1400,
+                  heightP = 600,
+                  radius = 200,
+                  innerradius = 0;
+
+                var arc = d3.arc().outerRadius(radius).innerRadius(innerradius);
+
+                const chart = svg
+                  .append("g")
+                  .attr("width", widthP)
+                  .attr("height", heightP)
+                  .append("g")
+                  .attr("class", "piechart")
+                  .attr(
+                    "transform",
+                    "translate(" + widthP / 2 + "," + heightP / 2 + ")"
+                  );
+                var pie = d3
+                  .pie()
+                  .sort(null)
+                  .value(function (d) {
+                    return d.avrg;
+                  });
+
+                var segments = chart.append("g").attr("class", "segments");
+
+                var slices = segments
+                  .selectAll(".arc")
+                  .data(pie(objects))
+                  .enter()
+                  .append("g")
+                  .attr("class", "arc");
+
+                slices
+                  .append("path")
+                  .attr("d", arc)
+                  .attr("stroke", "white")
+                  .attr("stroke-width", "1")
+                  .attr("stroke-linejoin", "round")
+                  .attr("fill", function (d, i) {
+                    return color(i);
+                  })
+                  .transition()
+                  .attrTween("d", function (d) {
+                    var i = d3.interpolate(d.startAngle + 0.1, d.endAngle);
+                    return function (t) {
+                      d.endAngle = i(t);
+                      return arc(d);
+                    };
+                  });
+
+                // draw label
+                slices
+                  .append("text")
+                  .attr("transform", function (d) {
+                    d.innerRadius = 0;
+                    d.outerRadius = radius;
+                    return "translate(" + arc.centroid(d) + ")";
+                  })
+                  .attr("text-anchor", "middle")
+                  .text(function (d, i) {
+                    return d.data.avrg;
+                  });
+
+                tooltip = d3
+                  .select("#layout")
+                  .append("div")
+                  .attr("class", "tooltip")
+                  .style("position", "absolute")
+                  .style("z-index", "10")
+                  .style("text-align", "left")
+                  .style("visibility", "hidden")
+                  .style("padding", "10px")
+                  .style("background", "rgba(0,0,0,0.6)")
+                  .style("border-radius", "4px")
+                  .style("color", "#fff")
+                  .text("a simple tooltip");
+
+                slices
+                  .on("mouseover", function (d) {
+                    console.log(d);
+                    d3.select(this)
+                      .transition()
+                      .duration(600)
+                      .attr(
+                        "transform",
+                        "translate(" +
+                          arc.centroid(d)[0] / 7 +
+                          "," +
+                          arc.centroid(d)[1] / 7 +
+                          ")"
+                      );
+                    tooltip
+                      .html(
+                        "Activité professionelle: " +
+                          d.data.act +
+                          "<br>" +
+                          "Nombre de réponses: " +
+                          d.data.sum +
+                          "<br>" +
+                          "total des réponses: " +
+                          d.data.sumW +
+                          "<br>" +
+                          "Moyenne: " +
+                          d.data.avrg +
+                          "<br>" +
+                          "Pourcentage: " +
+                          d.data.prct +
+                          " %"
+                      )
+                      .style("visibility", "visible");
+                  })
+                  .on("mousemove", function (d) {
+                    tooltip
+                      .style("top", d3.event.pageY - 10 + "px")
+                      .style("left", d3.event.pageX + 10 + "px");
+                  });
+
+                slices
+                  .on("mouseout", function () {
+                    d3.select(this)
+                      .transition()
+                      .duration(500)
+                      .attr("transform", "translate(0, 0)");
+                  })
+                  .on("mouseleave", function () {
+                    tooltip.html(``).style("visibility", "hidden");
+                  });
+
+                svg
+                  .append("text")
+                  .attr("class", "title")
+                  .attr("x", width / 2 + margin)
+                  .attr("y", 40)
+                  .attr("text-anchor", "middle")
+                  .text("Les moyennes d'âge par activité professionnelle");
+
+                svg
+                  .append("text")
+                  .attr("class", "source")
+                  .attr("x", width - margin / 2)
+                  .attr("y", height + margin * 1.7)
+                  .attr("text-anchor", "start")
+                  .text("Source: MNT, 2020");
+
+                svg
+                  .append("text")
+                  .attr("class", "title")
+                  .attr("x", 40 + margin)
+                  .attr("y", 40)
+                  .attr("text-anchor", "middle")
+                  .text("Diagramme circulaire");
+
+                //Legend
+                var legend = svg
+                  .selectAll(".legend")
+                  .data(
+                    objects.map(function (d) {
+                      return d.act;
+                    })
+                  )
+                  .enter()
+                  .append("g")
+                  .attr("class", "legend")
+                  .attr("transform", function (d, i) {
+                    return "translate(0," + i * 20 + ")";
+                  })
+                  .style("opacity", "0");
+
+                legend
+                  .append("rect")
+                  .attr("y", margin)
+                  .attr("x", width - margin - 18)
+                  .attr("width", 18)
+                  .attr("height", 18)
+                  .style("fill", function (d, i) {
+                    return color(i);
+                  });
+
+                legend
+                  .append("text")
+                  .attr("x", width - margin - 24)
+                  .attr("y", margin + 9)
+                  .attr("dy", ".35em")
+                  .style("text-anchor", "end")
+                  .text(function (d) {
+                    return d;
+                  });
+
+                legend
+                  .transition()
+                  .duration(500)
+                  .delay(function (d, i) {
+                    return 1300 + 100 * i;
+                  })
+                  .style("opacity", "1");
+              });
+            }
+          }
+        }
+      }
+    }
+
+    if (what == "NbrResp") {
+      if (by == "Region") {
+        d3.csv("MNT.csv").then(function (data) {
+          let regionsDup1D = [];
+          let regions2D = [];
+          let maxheight = 0;
+
+          data.forEach(function (d) {
+            regionsDup1D.push(d["2.wilaya"]);
+          });
+          let regions1D = Array.from(new Set(regionsDup1D));
+          regions1D.forEach(function (w) {
+            regions2D.push([w, 0, 0, 0, "#4ea8de"]);
+          });
+
+          regions2D.forEach(function (w) {
+            data.forEach(function (d) {
+              if (d["2.wilaya"] == w[0]) {
+                w[1] = w[1] + 1;
+              }
+              w[2] = w[2] + 1;
+            });
+            w[3] = ((w[1] / w[2]) * 100).toFixed(1);
+            if (w[1] > maxheight) {
+              maxheight = Math.ceil(w[1] / 5) * 5;
+            }
+          });
+
+          const keys = ["wilaya", "sum", "sumW", "prct", "color"];
+          const values = regions2D;
+          const objects = values.map((array) => {
+            const object = {};
+
+            keys.forEach((key, i) => (object[key] = array[i]));
+
+            return object;
+          });
+          //JSON.stringify(objects);
+          console.log(objects);
+
+          var color = d3
+            .scaleOrdinal()
+            .domain(objects.map((obj) => obj.wilaya))
+            .range(colors);
+
+          const widthP = 1400,
+            heightP = 600,
+            radius = 200,
+            innerradius = 0;
+
+          var arc = d3.arc().outerRadius(radius).innerRadius(innerradius);
+
+          const chart = svg
+            .append("g")
+            .attr("width", widthP)
+            .attr("height", heightP)
+            .append("g")
+            .attr("class", "piechart")
+            .attr(
+              "transform",
+              "translate(" + widthP / 2 + "," + heightP / 2 + ")"
+            );
+          var pie = d3
+            .pie()
+            .sort(null)
+            .value(function (d) {
+              return d.sum;
+            });
+
+          var segments = chart.append("g").attr("class", "segments");
+
+          var slices = segments
+            .selectAll(".arc")
+            .data(pie(objects))
+            .enter()
+            .append("g")
+            .attr("class", "arc");
+
+          slices
+            .append("path")
+            .attr("d", arc)
+            .attr("stroke", "white")
+            .attr("stroke-width", "1")
+            .attr("stroke-linejoin", "round")
+            .attr("fill", function (d, i) {
+              return color(i);
+            })
+            .transition()
+            .attrTween("d", function (d) {
+              var i = d3.interpolate(d.startAngle + 0.1, d.endAngle);
+              return function (t) {
+                d.endAngle = i(t);
+                return arc(d);
+              };
+            });
+
+          // draw label
+          slices
+            .append("text")
+            .attr("transform", function (d) {
+              d.innerRadius = 0;
+              d.outerRadius = radius;
+              return "translate(" + arc.centroid(d) + ")";
+            })
+            .attr("text-anchor", "middle")
+            .text(function (d, i) {
+              return d.data.sum;
+            });
+
+          tooltip = d3
+            .select("#layout")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("text-align", "left")
+            .style("visibility", "hidden")
+            .style("padding", "10px")
+            .style("background", "rgba(0,0,0,0.6)")
+            .style("border-radius", "4px")
+            .style("color", "#fff")
+            .text("a simple tooltip");
+
+          slices
+            .on("mouseover", function (d) {
+              console.log(d);
+              d3.select(this)
+                .transition()
+                .duration(600)
+                .attr(
+                  "transform",
+                  "translate(" +
+                    arc.centroid(d)[0] / 7 +
+                    "," +
+                    arc.centroid(d)[1] / 7 +
+                    ")"
+                );
+              tooltip
+                .html(
+                  "Wilaya: " +
+                    d.data.wilaya +
+                    "<br>" +
+                    "Nombre de réponses: " +
+                    d.data.sum +
+                    "<br>" +
+                    "total des réponses: " +
+                    d.data.sumW +
+                    "<br>" +
+                    "Pourcentage: " +
+                    d.data.prct +
+                    " %"
+                )
+                .style("visibility", "visible");
+            })
+            .on("mousemove", function (d) {
+              tooltip
+                .style("top", d3.event.pageY - 10 + "px")
+                .style("left", d3.event.pageX + 10 + "px");
+            });
+
+          slices
+            .on("mouseout", function () {
+              d3.select(this)
+                .transition()
+                .duration(500)
+                .attr("transform", "translate(0, 0)");
+            })
+            .on("mouseleave", function () {
+              tooltip.html(``).style("visibility", "hidden");
+            });
+
+          svg
+            .append("text")
+            .attr("class", "title")
+            .attr("x", width / 2 + margin)
+            .attr("y", 40)
+            .attr("text-anchor", "middle")
+            .text("Le nombre de réponse par wilaya");
+
+          svg
+            .append("text")
+            .attr("class", "source")
+            .attr("x", width - margin / 2)
+            .attr("y", height + margin * 1.7)
+            .attr("text-anchor", "start")
+            .text("Source: MNT, 2020");
+
+          svg
+            .append("text")
+            .attr("class", "title")
+            .attr("x", 40 + margin)
+            .attr("y", 40)
+            .attr("text-anchor", "middle")
+            .text("Diagramme circulaire");
+
+          //Legend
+          var legend = svg
+            .selectAll(".legend")
+            .data(
+              objects.map(function (d) {
+                return d.wilaya;
+              })
+            )
+            .enter()
+            .append("g")
+            .attr("class", "legend")
+            .attr("transform", function (d, i) {
+              return "translate(0," + i * 20 + ")";
+            })
+            .style("opacity", "0");
+
+          legend
+            .append("rect")
+            .attr("y", margin)
+            .attr("x", width - margin - 18)
+            .attr("width", 18)
+            .attr("height", 18)
+            .style("fill", function (d, i) {
+              return color(i);
+            });
+
+          legend
+            .append("text")
+            .attr("x", width - margin - 24)
+            .attr("y", margin + 9)
+            .attr("dy", ".35em")
+            .style("text-anchor", "end")
+            .text(function (d) {
+              return d;
+            });
+
+          legend
+            .transition()
+            .duration(500)
+            .delay(function (d, i) {
+              return 1300 + 100 * i;
+            })
+            .style("opacity", "1");
+        });
+      } else {
+        if (by == "Sexe") {
+          d3.csv("MNT.csv").then(function (data) {
+            let sexesDup1D = [];
+            let sexes2D = [];
+            let maxheight = 0;
+
+            data.forEach(function (d) {
+              sexesDup1D.push(d["1.sexe"]);
+            });
+            let sexes1D = Array.from(new Set(sexesDup1D));
+            sexes1D.forEach(function (s) {
+              sexes2D.push([s, 0, 0, 0, "#4ea8de"]);
+            });
+
+            sexes2D.forEach(function (s) {
+              data.forEach(function (d) {
+                if (d["1.sexe"] == s[0]) {
+                  s[1] = s[1] + 1;
+                }
+                s[2] = s[2] + 1;
+              });
+              s[3] = ((s[1] / s[2]) * 100).toFixed(1);
+              if (s[1] > maxheight) {
+                maxheight = Math.ceil(s[1] / 5) * 5;
+              }
+            });
+
+            const keys = ["sexe", "sum", "sumW", "prct", "color"];
+            const values = sexes2D;
+            const objects = values.map((array) => {
+              const object = {};
+
+              keys.forEach((key, i) => (object[key] = array[i]));
+
+              return object;
+            });
+            //JSON.stringify(objects);
+            console.log(objects);
+
+            var color = d3
+              .scaleOrdinal()
+              .domain(objects.map((obj) => obj.sexe))
+              .range(colors);
+
+            const widthP = 1400,
+              heightP = 600,
+              radius = 200,
+              innerradius = 0;
+
+            var arc = d3.arc().outerRadius(radius).innerRadius(innerradius);
+
+            const chart = svg
+              .append("g")
+              .attr("width", widthP)
+              .attr("height", heightP)
+              .append("g")
+              .attr("class", "piechart")
+              .attr(
+                "transform",
+                "translate(" + widthP / 2 + "," + heightP / 2 + ")"
+              );
+            var pie = d3
+              .pie()
+              .sort(null)
+              .value(function (d) {
+                return d.sum;
+              });
+
+            var segments = chart.append("g").attr("class", "segments");
+
+            var slices = segments
+              .selectAll(".arc")
+              .data(pie(objects))
+              .enter()
+              .append("g")
+              .attr("class", "arc");
+
+            slices
+              .append("path")
+              .attr("d", arc)
+              .attr("stroke", "white")
+              .attr("stroke-width", "1")
+              .attr("stroke-linejoin", "round")
+              .attr("fill", function (d, i) {
+                return color(i);
+              })
+              .transition()
+              .attrTween("d", function (d) {
+                var i = d3.interpolate(d.startAngle + 0.1, d.endAngle);
+                return function (t) {
+                  d.endAngle = i(t);
+                  return arc(d);
+                };
+              });
+
+            // draw label
+            slices
+              .append("text")
+              .attr("transform", function (d) {
+                d.innerRadius = 0;
+                d.outerRadius = radius;
+                return "translate(" + arc.centroid(d) + ")";
+              })
+              .attr("text-anchor", "middle")
+              .text(function (d, i) {
+                return d.data.sum;
+              });
+
+            tooltip = d3
+              .select("#layout")
+              .append("div")
+              .attr("class", "tooltip")
+              .style("position", "absolute")
+              .style("z-index", "10")
+              .style("text-align", "left")
+              .style("visibility", "hidden")
+              .style("padding", "10px")
+              .style("background", "rgba(0,0,0,0.6)")
+              .style("border-radius", "4px")
+              .style("color", "#fff")
+              .text("a simple tooltip");
+
+            slices
+              .on("mouseover", function (d) {
+                console.log(d);
+                d3.select(this)
+                  .transition()
+                  .duration(600)
+                  .attr(
+                    "transform",
+                    "translate(" +
+                      arc.centroid(d)[0] / 7 +
+                      "," +
+                      arc.centroid(d)[1] / 7 +
+                      ")"
+                  );
+                tooltip
+                  .html(
+                    "Sexe: " +
+                      d.data.sexe +
+                      "<br>" +
+                      "Nombre de réponses: " +
+                      d.data.sum +
+                      "<br>" +
+                      "total des réponses: " +
+                      d.data.sumW +
+                      "<br>" +
+                      "Pourcentage: " +
+                      d.data.prct +
+                      " %"
+                  )
+                  .style("visibility", "visible");
+              })
+              .on("mousemove", function (d) {
+                tooltip
+                  .style("top", d3.event.pageY - 10 + "px")
+                  .style("left", d3.event.pageX + 10 + "px");
+              });
+
+            slices
+              .on("mouseout", function () {
+                d3.select(this)
+                  .transition()
+                  .duration(500)
+                  .attr("transform", "translate(0, 0)");
+              })
+              .on("mouseleave", function () {
+                tooltip.html(``).style("visibility", "hidden");
+              });
+
+            svg
+              .append("text")
+              .attr("class", "title")
+              .attr("x", width / 2 + margin)
+              .attr("y", 40)
+              .attr("text-anchor", "middle")
+              .text("Le nombre de réponse par sexe");
+
+            svg
+              .append("text")
+              .attr("class", "source")
+              .attr("x", width - margin / 2)
+              .attr("y", height + margin * 1.7)
+              .attr("text-anchor", "start")
+              .text("Source: MNT, 2020");
+
+            svg
+              .append("text")
+              .attr("class", "title")
+              .attr("x", 40 + margin)
+              .attr("y", 40)
+              .attr("text-anchor", "middle")
+              .text("Diagramme circulaire");
+
+            //Legend
+            var legend = svg
+              .selectAll(".legend")
+              .data(
+                objects.map(function (d) {
+                  return d.sexe;
+                })
+              )
+              .enter()
+              .append("g")
+              .attr("class", "legend")
+              .attr("transform", function (d, i) {
+                return "translate(0," + i * 20 + ")";
+              })
+              .style("opacity", "0");
+
+            legend
+              .append("rect")
+              .attr("y", margin)
+              .attr("x", width - margin - 18)
+              .attr("width", 18)
+              .attr("height", 18)
+              .style("fill", function (d, i) {
+                return color(i);
+              });
+
+            legend
+              .append("text")
+              .attr("x", width - margin - 24)
+              .attr("y", margin + 9)
+              .attr("dy", ".35em")
+              .style("text-anchor", "end")
+              .text(function (d) {
+                return d;
+              });
+
+            legend
+              .transition()
+              .duration(500)
+              .delay(function (d, i) {
+                return 1300 + 100 * i;
+              })
+              .style("opacity", "1");
+          });
+        } else {
+          if (by == "NivEtud") {
+            d3.csv("MNT.csv").then(function (data) {
+              let nivsDup1D = [];
+              let nivs2D = [];
+              let maxheight = 0;
+
+              data.forEach(function (d) {
+                nivsDup1D.push(d["3.Quel est votre niveau d'étude"]);
+              });
+              let nivs1D = Array.from(new Set(nivsDup1D));
+              nivs1D.forEach(function (n) {
+                nivs2D.push([n, 0, 0, 0, "#4ea8de"]);
+              });
+
+              nivs2D.forEach(function (n) {
+                data.forEach(function (d) {
+                  if (d["3.Quel est votre niveau d'étude"] == n[0]) {
+                    n[1] = n[1] + 1;
+                  }
+                  n[2] = n[2] + 1;
+                });
+                n[3] = ((n[1] / n[2]) * 100).toFixed(1);
+                if (n[1] > maxheight) {
+                  maxheight = Math.ceil(n[1] / 5) * 5;
+                }
+              });
+
+              const keys = ["niv", "sum", "sumW", "prct", "color"];
+              const values = nivs2D;
+              const objects = values.map((array) => {
+                const object = {};
+
+                keys.forEach((key, i) => (object[key] = array[i]));
+
+                return object;
+              });
+              //JSON.stringify(objects);
+              console.log(objects);
+
+              var color = d3
+                .scaleOrdinal()
+                .domain(objects.map((obj) => obj.niv))
+                .range(colors);
+
+              const widthP = 1400,
+                heightP = 600,
+                radius = 200,
+                innerradius = 0;
+
+              var arc = d3.arc().outerRadius(radius).innerRadius(innerradius);
+
+              const chart = svg
+                .append("g")
+                .attr("width", widthP)
+                .attr("height", heightP)
+                .append("g")
+                .attr("class", "piechart")
+                .attr(
+                  "transform",
+                  "translate(" + widthP / 2 + "," + heightP / 2 + ")"
+                );
+              var pie = d3
+                .pie()
+                .sort(null)
+                .value(function (d) {
+                  return d.sum;
+                });
+
+              var segments = chart.append("g").attr("class", "segments");
+
+              var slices = segments
+                .selectAll(".arc")
+                .data(pie(objects))
+                .enter()
+                .append("g")
+                .attr("class", "arc");
+
+              slices
+                .append("path")
+                .attr("d", arc)
+                .attr("stroke", "white")
+                .attr("stroke-width", "1")
+                .attr("stroke-linejoin", "round")
+                .attr("fill", function (d, i) {
+                  return color(i);
+                })
+                .transition()
+                .attrTween("d", function (d) {
+                  var i = d3.interpolate(d.startAngle + 0.1, d.endAngle);
+                  return function (t) {
+                    d.endAngle = i(t);
+                    return arc(d);
+                  };
+                });
+
+              // draw label
+              slices
+                .append("text")
+                .attr("transform", function (d) {
+                  d.innerRadius = 0;
+                  d.outerRadius = radius;
+                  return "translate(" + arc.centroid(d) + ")";
+                })
+                .attr("text-anchor", "middle")
+                .text(function (d, i) {
+                  return d.data.sum;
+                });
+
+              tooltip = d3
+                .select("#layout")
+                .append("div")
+                .attr("class", "tooltip")
+                .style("position", "absolute")
+                .style("z-index", "10")
+                .style("text-align", "left")
+                .style("visibility", "hidden")
+                .style("padding", "10px")
+                .style("background", "rgba(0,0,0,0.6)")
+                .style("border-radius", "4px")
+                .style("color", "#fff")
+                .text("a simple tooltip");
+
+              slices
+                .on("mouseover", function (d) {
+                  console.log(d);
+                  d3.select(this)
+                    .transition()
+                    .duration(600)
+                    .attr(
+                      "transform",
+                      "translate(" +
+                        arc.centroid(d)[0] / 7 +
+                        "," +
+                        arc.centroid(d)[1] / 7 +
+                        ")"
+                    );
+                  tooltip
+                    .html(
+                      "Niveau d'étude: " +
+                        d.data.niv +
+                        "<br>" +
+                        "Nombre de réponses: " +
+                        d.data.sum +
+                        "<br>" +
+                        "total des réponses: " +
+                        d.data.sumW +
+                        "<br>" +
+                        "Pourcentage: " +
+                        d.data.prct +
+                        " %"
+                    )
+                    .style("visibility", "visible");
+                })
+                .on("mousemove", function (d) {
+                  tooltip
+                    .style("top", d3.event.pageY - 10 + "px")
+                    .style("left", d3.event.pageX + 10 + "px");
+                });
+
+              slices
+                .on("mouseout", function () {
+                  d3.select(this)
+                    .transition()
+                    .duration(500)
+                    .attr("transform", "translate(0, 0)");
+                })
+                .on("mouseleave", function () {
+                  tooltip.html(``).style("visibility", "hidden");
+                });
+
+              svg
+                .append("text")
+                .attr("class", "title")
+                .attr("x", width / 2 + margin)
+                .attr("y", 40)
+                .attr("text-anchor", "middle")
+                .text("Le nombre de réponse par niveau d'étude");
+
+              svg
+                .append("text")
+                .attr("class", "source")
+                .attr("x", width - margin / 2)
+                .attr("y", height + margin * 1.7)
+                .attr("text-anchor", "start")
+                .text("Source: MNT, 2020");
+
+              svg
+                .append("text")
+                .attr("class", "title")
+                .attr("x", 40 + margin)
+                .attr("y", 40)
+                .attr("text-anchor", "middle")
+                .text("Diagramme circulaire");
+
+              //Legend
+              var legend = svg
+                .selectAll(".legend")
+                .data(
+                  objects.map(function (d) {
+                    return d.niv;
+                  })
+                )
+                .enter()
+                .append("g")
+                .attr("class", "legend")
+                .attr("transform", function (d, i) {
+                  return "translate(0," + i * 20 + ")";
+                })
+                .style("opacity", "0");
+
+              legend
+                .append("rect")
+                .attr("y", margin)
+                .attr("x", width - margin - 18)
+                .attr("width", 18)
+                .attr("height", 18)
+                .style("fill", function (d, i) {
+                  return color(i);
+                });
+
+              legend
+                .append("text")
+                .attr("x", width - margin - 24)
+                .attr("y", margin + 9)
+                .attr("dy", ".35em")
+                .style("text-anchor", "end")
+                .text(function (d) {
+                  return d;
+                });
+
+              legend
+                .transition()
+                .duration(500)
+                .delay(function (d, i) {
+                  return 1300 + 100 * i;
+                })
+                .style("opacity", "1");
+            });
+          } else {
+            if (by == "Activity") {
+              d3.csv("MNT.csv").then(function (data) {
+                let actsDup1D = [];
+                let acts2D = [];
+                let maxheight = 0;
+
+                data.forEach(function (d) {
+                  actsDup1D.push(
+                    d["4.Quelles est votre activité  professionnelle"]
+                  );
+                });
+                let acts1D = Array.from(new Set(actsDup1D));
+                acts1D.forEach(function (a) {
+                  acts2D.push([a, 0, 0, 0, "#4ea8de"]);
+                });
+
+                acts2D.forEach(function (a) {
+                  data.forEach(function (d) {
+                    if (
+                      d["4.Quelles est votre activité  professionnelle"] == a[0]
+                    ) {
+                      a[1] = a[1] + 1;
+                    }
+                    a[2] = a[2] + 1;
+                  });
+                  a[3] = ((a[1] / a[2]) * 100).toFixed(1);
+                  if (a[1] > maxheight) {
+                    maxheight = Math.ceil(a[1] / 5) * 5;
+                  }
+                });
+
+                const keys = ["act", "sum", "sumW", "prct", "color"];
+                const values = acts2D;
+                const objects = values.map((array) => {
+                  const object = {};
+
+                  keys.forEach((key, i) => (object[key] = array[i]));
+
+                  return object;
+                });
+                //JSON.stringify(objects);
+                console.log(objects);
+
+                var color = d3
+                  .scaleOrdinal()
+                  .domain(objects.map((obj) => obj.act))
+                  .range(colors);
+
+                const widthP = 1400,
+                  heightP = 600,
+                  radius = 200,
+                  innerradius = 0;
+
+                var arc = d3.arc().outerRadius(radius).innerRadius(innerradius);
+
+                const chart = svg
+                  .append("g")
+                  .attr("width", widthP)
+                  .attr("height", heightP)
+                  .append("g")
+                  .attr("class", "piechart")
+                  .attr(
+                    "transform",
+                    "translate(" + widthP / 2 + "," + heightP / 2 + ")"
+                  );
+                var pie = d3
+                  .pie()
+                  .sort(null)
+                  .value(function (d) {
+                    return d.sum;
+                  });
+
+                var segments = chart.append("g").attr("class", "segments");
+
+                var slices = segments
+                  .selectAll(".arc")
+                  .data(pie(objects))
+                  .enter()
+                  .append("g")
+                  .attr("class", "arc");
+
+                slices
+                  .append("path")
+                  .attr("d", arc)
+                  .attr("stroke", "white")
+                  .attr("stroke-width", "1")
+                  .attr("stroke-linejoin", "round")
+                  .attr("fill", function (d, i) {
+                    return color(i);
+                  })
+                  .transition()
+                  .attrTween("d", function (d) {
+                    var i = d3.interpolate(d.startAngle + 0.1, d.endAngle);
+                    return function (t) {
+                      d.endAngle = i(t);
+                      return arc(d);
+                    };
+                  });
+
+                // draw label
+                slices
+                  .append("text")
+                  .attr("transform", function (d) {
+                    d.innerRadius = 0;
+                    d.outerRadius = radius;
+                    return "translate(" + arc.centroid(d) + ")";
+                  })
+                  .attr("text-anchor", "middle")
+                  .text(function (d, i) {
+                    return d.data.sum;
+                  });
+
+                tooltip = d3
+                  .select("#layout")
+                  .append("div")
+                  .attr("class", "tooltip")
+                  .style("position", "absolute")
+                  .style("z-index", "10")
+                  .style("text-align", "left")
+                  .style("visibility", "hidden")
+                  .style("padding", "10px")
+                  .style("background", "rgba(0,0,0,0.6)")
+                  .style("border-radius", "4px")
+                  .style("color", "#fff")
+                  .text("a simple tooltip");
+
+                slices
+                  .on("mouseover", function (d) {
+                    console.log(d);
+                    d3.select(this)
+                      .transition()
+                      .duration(600)
+                      .attr(
+                        "transform",
+                        "translate(" +
+                          arc.centroid(d)[0] / 7 +
+                          "," +
+                          arc.centroid(d)[1] / 7 +
+                          ")"
+                      );
+                    tooltip
+                      .html(
+                        "Activité professionnelle: " +
+                          d.data.act +
+                          "<br>" +
+                          "Nombre de réponses: " +
+                          d.data.sum +
+                          "<br>" +
+                          "total des réponses: " +
+                          d.data.sumW +
+                          "<br>" +
+                          "Pourcentage: " +
+                          d.data.prct +
+                          " %"
+                      )
+                      .style("visibility", "visible");
+                  })
+                  .on("mousemove", function (d) {
+                    tooltip
+                      .style("top", d3.event.pageY - 10 + "px")
+                      .style("left", d3.event.pageX + 10 + "px");
+                  });
+
+                slices
+                  .on("mouseout", function () {
+                    d3.select(this)
+                      .transition()
+                      .duration(500)
+                      .attr("transform", "translate(0, 0)");
+                  })
+                  .on("mouseleave", function () {
+                    tooltip.html(``).style("visibility", "hidden");
+                  });
+
+                svg
+                  .append("text")
+                  .attr("class", "title")
+                  .attr("x", width / 2 + margin)
+                  .attr("y", 40)
+                  .attr("text-anchor", "middle")
+                  .text("Le nombre de réponse par activité professionnelle");
+
+                svg
+                  .append("text")
+                  .attr("class", "source")
+                  .attr("x", width - margin / 2)
+                  .attr("y", height + margin * 1.7)
+                  .attr("text-anchor", "start")
+                  .text("Source: MNT, 2020");
+
+                svg
+                  .append("text")
+                  .attr("class", "title")
+                  .attr("x", 40 + margin)
+                  .attr("y", 40)
+                  .attr("text-anchor", "middle")
+                  .text("Diagramme circulaire");
+
+                //Legend
+                var legend = svg
+                  .selectAll(".legend")
+                  .data(
+                    objects.map(function (d) {
+                      return d.act;
+                    })
+                  )
+                  .enter()
+                  .append("g")
+                  .attr("class", "legend")
+                  .attr("transform", function (d, i) {
+                    return "translate(0," + i * 20 + ")";
+                  })
+                  .style("opacity", "0");
+
+                legend
+                  .append("rect")
+                  .attr("y", margin)
+                  .attr("x", width - margin - 18)
+                  .attr("width", 18)
+                  .attr("height", 18)
+                  .style("fill", function (d, i) {
+                    return color(i);
+                  });
+
+                legend
+                  .append("text")
+                  .attr("x", width - margin - 24)
+                  .attr("y", margin + 9)
+                  .attr("dy", ".35em")
+                  .style("text-anchor", "end")
+                  .text(function (d) {
+                    return d;
+                  });
+
+                legend
+                  .transition()
+                  .duration(500)
+                  .delay(function (d, i) {
+                    return 1300 + 100 * i;
+                  })
+                  .style("opacity", "1");
+              });
+            }
+          }
+        }
+      }
+    }
+
+    if (what == "PropDis") {
+      if (by == "Region") {
+        d3.csv("MNT.csv").then(function (data) {
+          let regionsDup1D = [];
+          let regions2D = [];
+          let maxheight = 0;
+
+          data.forEach(function (d) {
+            regionsDup1D.push(d["2.wilaya"]);
+          });
+          let regions1D = Array.from(new Set(regionsDup1D));
+          regions1D.forEach(function (w) {
+            regions2D.push([w, 0, 0, 0, "#4ea8de"]);
+          });
+
+          regions2D.forEach(function (w) {
+            data.forEach(function (d) {
+              if (d["2.wilaya"] == w[0]) {
+                if (d["25.si oui c'est quoi la maladies?"] == output.value) {
+                  w[1] = w[1] + 1;
+                }
+                w[2] = w[2] + 1;
+              }
+              w[3] = ((w[1] / w[2]) * 100).toFixed(1);
+            });
+            if (w[3] > maxheight) {
+              maxheight = Math.ceil(w[3] / 5) * 5;
+            }
+          });
+
+          const keys = ["wilaya", "sumDis", "sumReg", "prct", "color"];
+          const values = regions2D;
+          const objects = values.map((array) => {
+            const object = {};
+
+            keys.forEach((key, i) => (object[key] = array[i]));
+
+            return object;
+          });
+          //JSON.stringify(objects);
+          console.log(objects);
+
+          var color = d3
+            .scaleOrdinal()
+            .domain(objects.map((obj) => obj.wilaya))
+            .range(colors);
+
+          const widthP = 1400,
+            heightP = 600,
+            radius = 200,
+            innerradius = 0;
+
+          var arc = d3.arc().outerRadius(radius).innerRadius(innerradius);
+
+          const chart = svg
+            .append("g")
+            .attr("width", widthP)
+            .attr("height", heightP)
+            .append("g")
+            .attr("class", "piechart")
+            .attr(
+              "transform",
+              "translate(" + widthP / 2 + "," + heightP / 2 + ")"
+            );
+          var pie = d3
+            .pie()
+            .sort(null)
+            .value(function (d) {
+              return d.prct;
+            });
+
+          var segments = chart.append("g").attr("class", "segments");
+
+          var slices = segments
+            .selectAll(".arc")
+            .data(pie(objects))
+            .enter()
+            .append("g")
+            .attr("class", "arc");
+
+          slices
+            .append("path")
+            .attr("d", arc)
+            .attr("stroke", "white")
+            .attr("stroke-width", "1")
+            .attr("stroke-linejoin", "round")
+            .attr("fill", function (d, i) {
+              return color(i);
+            })
+            .transition()
+            .attrTween("d", function (d) {
+              var i = d3.interpolate(d.startAngle + 0.1, d.endAngle);
+              return function (t) {
+                d.endAngle = i(t);
+                return arc(d);
+              };
+            });
+
+          // draw label
+          slices
+            .append("text")
+            .attr("transform", function (d) {
+              d.innerRadius = 0;
+              d.outerRadius = radius;
+              return "translate(" + arc.centroid(d) + ")";
+            })
+            .attr("text-anchor", "middle")
+            .text(function (d, i) {
+              return d.data.prct;
+            });
+
+          tooltip = d3
+            .select("#layout")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("text-align", "left")
+            .style("visibility", "hidden")
+            .style("padding", "10px")
+            .style("background", "rgba(0,0,0,0.6)")
+            .style("border-radius", "4px")
+            .style("color", "#fff")
+            .text("a simple tooltip");
+
+          slices
+            .on("mouseover", function (d) {
+              console.log(d);
+              d3.select(this)
+                .transition()
+                .duration(600)
+                .attr(
+                  "transform",
+                  "translate(" +
+                    arc.centroid(d)[0] / 7 +
+                    "," +
+                    arc.centroid(d)[1] / 7 +
+                    ")"
+                );
+              tooltip
+                .html(
+                  "Wilaya: " +
+                    d.data.wilaya +
+                    "<br>" +
+                    "Nombre de réponses: " +
+                    d.data.sum +
+                    "<br>" +
+                    "total des réponses: " +
+                    d.data.sumReg +
+                    "<br>" +
+                    "Pourcentage: " +
+                    d.data.prct +
+                    " %"
+                )
+                .style("visibility", "visible");
+            })
+            .on("mousemove", function (d) {
+              tooltip
+                .style("top", d3.event.pageY - 10 + "px")
+                .style("left", d3.event.pageX + 10 + "px");
+            });
+
+          slices
+            .on("mouseout", function () {
+              d3.select(this)
+                .transition()
+                .duration(500)
+                .attr("transform", "translate(0, 0)");
+            })
+            .on("mouseleave", function () {
+              tooltip.html(``).style("visibility", "hidden");
+            });
+
+          svg
+            .append("text")
+            .attr("class", "title")
+            .attr("x", width / 2 + margin)
+            .attr("y", 40)
+            .attr("text-anchor", "middle")
+            .text(
+              "Pourcentage de la maladie (" + output.value + ") par wilaya"
+            );
+
+          svg
+            .append("text")
+            .attr("class", "source")
+            .attr("x", width - margin / 2)
+            .attr("y", height + margin * 1.7)
+            .attr("text-anchor", "start")
+            .text("Source: MNT, 2020");
+
+          svg
+            .append("text")
+            .attr("class", "title")
+            .attr("x", 40 + margin)
+            .attr("y", 40)
+            .attr("text-anchor", "middle")
+            .text("Diagramme circulaire");
+
+          //Legend
+          var legend = svg
+            .selectAll(".legend")
+            .data(
+              objects.map(function (d) {
+                return d.wilaya;
+              })
+            )
+            .enter()
+            .append("g")
+            .attr("class", "legend")
+            .attr("transform", function (d, i) {
+              return "translate(0," + i * 20 + ")";
+            })
+            .style("opacity", "0");
+
+          legend
+            .append("rect")
+            .attr("y", margin)
+            .attr("x", width - margin - 18)
+            .attr("width", 18)
+            .attr("height", 18)
+            .style("fill", function (d, i) {
+              return color(i);
+            });
+
+          legend
+            .append("text")
+            .attr("x", width - margin - 24)
+            .attr("y", margin + 9)
+            .attr("dy", ".35em")
+            .style("text-anchor", "end")
+            .text(function (d) {
+              return d;
+            });
+
+          legend
+            .transition()
+            .duration(500)
+            .delay(function (d, i) {
+              return 1300 + 100 * i;
+            })
+            .style("opacity", "1");
+        });
+      } else {
+        if (by == "Sexe") {
+          d3.csv("MNT.csv").then(function (data) {
+            let sexesDup1D = [];
+            let sexes2D = [];
+            let maxheight = 0;
+
+            data.forEach(function (d) {
+              sexesDup1D.push(d["1.sexe"]);
+            });
+            let sexes1D = Array.from(new Set(sexesDup1D));
+            sexes1D.forEach(function (s) {
+              sexes2D.push([s, 0, 0, 0, "#4ea8de"]);
+            });
+
+            sexes2D.forEach(function (s) {
+              data.forEach(function (d) {
+                if (d["1.sexe"] == s[0]) {
+                  if (d["25.si oui c'est quoi la maladies?"] == output.value) {
+                    s[1] = s[1] + 1;
+                  }
+                  s[2] = s[2] + 1;
+                }
+                s[3] = ((s[1] / s[2]) * 100).toFixed(1);
+              });
+              if (s[3] > maxheight) {
+                maxheight = Math.ceil(s[3] / 2) * 2;
+              }
+            });
+
+            const keys = ["sexe", "sumDis", "sumS", "prct", "color"];
+            const values = sexes2D;
+            const objects = values.map((array) => {
+              const object = {};
+
+              keys.forEach((key, i) => (object[key] = array[i]));
+
+              return object;
+            });
+            //JSON.stringify(objects);
+            console.log(objects);
+
+            var color = d3
+              .scaleOrdinal()
+              .domain(objects.map((obj) => obj.sexe))
+              .range(colors);
+
+            const widthP = 1400,
+              heightP = 600,
+              radius = 200,
+              innerradius = 0;
+
+            var arc = d3.arc().outerRadius(radius).innerRadius(innerradius);
+
+            const chart = svg
+              .append("g")
+              .attr("width", widthP)
+              .attr("height", heightP)
+              .append("g")
+              .attr("class", "piechart")
+              .attr(
+                "transform",
+                "translate(" + widthP / 2 + "," + heightP / 2 + ")"
+              );
+            var pie = d3
+              .pie()
+              .sort(null)
+              .value(function (d) {
+                return d.prct;
+              });
+
+            var segments = chart.append("g").attr("class", "segments");
+
+            var slices = segments
+              .selectAll(".arc")
+              .data(pie(objects))
+              .enter()
+              .append("g")
+              .attr("class", "arc");
+
+            slices
+              .append("path")
+              .attr("d", arc)
+              .attr("stroke", "white")
+              .attr("stroke-width", "1")
+              .attr("stroke-linejoin", "round")
+              .attr("fill", function (d, i) {
+                return color(i);
+              })
+              .transition()
+              .attrTween("d", function (d) {
+                var i = d3.interpolate(d.startAngle + 0.1, d.endAngle);
+                return function (t) {
+                  d.endAngle = i(t);
+                  return arc(d);
+                };
+              });
+
+            // draw label
+            slices
+              .append("text")
+              .attr("transform", function (d) {
+                d.innerRadius = 0;
+                d.outerRadius = radius;
+                return "translate(" + arc.centroid(d) + ")";
+              })
+              .attr("text-anchor", "middle")
+              .text(function (d, i) {
+                return d.data.prct;
+              });
+
+            tooltip = d3
+              .select("#layout")
+              .append("div")
+              .attr("class", "tooltip")
+              .style("position", "absolute")
+              .style("z-index", "10")
+              .style("text-align", "left")
+              .style("visibility", "hidden")
+              .style("padding", "10px")
+              .style("background", "rgba(0,0,0,0.6)")
+              .style("border-radius", "4px")
+              .style("color", "#fff")
+              .text("a simple tooltip");
+
+            slices
+              .on("mouseover", function (d) {
+                console.log(d);
+                d3.select(this)
+                  .transition()
+                  .duration(600)
+                  .attr(
+                    "transform",
+                    "translate(" +
+                      arc.centroid(d)[0] / 7 +
+                      "," +
+                      arc.centroid(d)[1] / 7 +
+                      ")"
+                  );
+                tooltip
+                  .html(
+                    "Sexe: " +
+                      d.data.sexe +
+                      "<br>" +
+                      "Nombre de réponses: " +
+                      d.data.sum +
+                      "<br>" +
+                      "total des réponses: " +
+                      d.data.sumS +
+                      "<br>" +
+                      "Pourcentage: " +
+                      d.data.prct +
+                      " %"
+                  )
+                  .style("visibility", "visible");
+              })
+              .on("mousemove", function (d) {
+                tooltip
+                  .style("top", d3.event.pageY - 10 + "px")
+                  .style("left", d3.event.pageX + 10 + "px");
+              });
+
+            slices
+              .on("mouseout", function () {
+                d3.select(this)
+                  .transition()
+                  .duration(500)
+                  .attr("transform", "translate(0, 0)");
+              })
+              .on("mouseleave", function () {
+                tooltip.html(``).style("visibility", "hidden");
+              });
+
+            svg
+              .append("text")
+              .attr("class", "title")
+              .attr("x", width / 2 + margin)
+              .attr("y", 40)
+              .attr("text-anchor", "middle")
+              .text(
+                "Pourcentage de la maladie (" + output.value + ") par sexe"
+              );
+
+            svg
+              .append("text")
+              .attr("class", "source")
+              .attr("x", width - margin / 2)
+              .attr("y", height + margin * 1.7)
+              .attr("text-anchor", "start")
+              .text("Source: MNT, 2020");
+
+            svg
+              .append("text")
+              .attr("class", "title")
+              .attr("x", 40 + margin)
+              .attr("y", 40)
+              .attr("text-anchor", "middle")
+              .text("Diagramme circulaire");
+
+            //Legend
+            var legend = svg
+              .selectAll(".legend")
+              .data(
+                objects.map(function (d) {
+                  return d.sexe;
+                })
+              )
+              .enter()
+              .append("g")
+              .attr("class", "legend")
+              .attr("transform", function (d, i) {
+                return "translate(0," + i * 20 + ")";
+              })
+              .style("opacity", "0");
+
+            legend
+              .append("rect")
+              .attr("y", margin)
+              .attr("x", width - margin - 18)
+              .attr("width", 18)
+              .attr("height", 18)
+              .style("fill", function (d, i) {
+                return color(i);
+              });
+
+            legend
+              .append("text")
+              .attr("x", width - margin - 24)
+              .attr("y", margin + 9)
+              .attr("dy", ".35em")
+              .style("text-anchor", "end")
+              .text(function (d) {
+                return d;
+              });
+
+            legend
+              .transition()
+              .duration(500)
+              .delay(function (d, i) {
+                return 1300 + 100 * i;
+              })
+              .style("opacity", "1");
+          });
+        } else {
+          if (by == "NivEtud") {
+            d3.csv("MNT.csv").then(function (data) {
+              let nivsDup1D = [];
+              let nivs2D = [];
+              let maxheight = 0;
+
+              data.forEach(function (d) {
+                nivsDup1D.push(d["3.Quel est votre niveau d'étude"]);
+              });
+              let nivs1D = Array.from(new Set(nivsDup1D));
+              nivs1D.forEach(function (n) {
+                nivs2D.push([n, 0, 0, 0, "#4ea8de"]);
+              });
+
+              nivs2D.forEach(function (n) {
+                data.forEach(function (d) {
+                  if (d["3.Quel est votre niveau d'étude"] == n[0]) {
+                    if (
+                      d["25.si oui c'est quoi la maladies?"] == output.value
+                    ) {
+                      n[1] = n[1] + 1;
+                    }
+                    n[2] = n[2] + 1;
+                  }
+                  n[3] = ((n[1] / n[2]) * 100).toFixed(1);
+                });
+                if (n[3] > maxheight) {
+                  maxheight = Math.ceil(n[3] / 5) * 5;
+                }
+              });
+
+              const keys = ["niv", "sumDis", "sumN", "prct", "color"];
+              const values = nivs2D;
+              const objects = values.map((array) => {
+                const object = {};
+
+                keys.forEach((key, i) => (object[key] = array[i]));
+
+                return object;
+              });
+              //JSON.stringify(objects);
+              console.log(objects);
+
+              var color = d3
+                .scaleOrdinal()
+                .domain(objects.map((obj) => obj.niv))
+                .range(colors);
+
+              const widthP = 1400,
+                heightP = 600,
+                radius = 200,
+                innerradius = 0;
+
+              var arc = d3.arc().outerRadius(radius).innerRadius(innerradius);
+
+              const chart = svg
+                .append("g")
+                .attr("width", widthP)
+                .attr("height", heightP)
+                .append("g")
+                .attr("class", "piechart")
+                .attr(
+                  "transform",
+                  "translate(" + widthP / 2 + "," + heightP / 2 + ")"
+                );
+              var pie = d3
+                .pie()
+                .sort(null)
+                .value(function (d) {
+                  return d.prct;
+                });
+
+              var segments = chart.append("g").attr("class", "segments");
+
+              var slices = segments
+                .selectAll(".arc")
+                .data(pie(objects))
+                .enter()
+                .append("g")
+                .attr("class", "arc");
+
+              slices
+                .append("path")
+                .attr("d", arc)
+                .attr("stroke", "white")
+                .attr("stroke-width", "1")
+                .attr("stroke-linejoin", "round")
+                .attr("fill", function (d, i) {
+                  return color(i);
+                })
+                .transition()
+                .attrTween("d", function (d) {
+                  var i = d3.interpolate(d.startAngle + 0.1, d.endAngle);
+                  return function (t) {
+                    d.endAngle = i(t);
+                    return arc(d);
+                  };
+                });
+
+              // draw label
+              slices
+                .append("text")
+                .attr("transform", function (d) {
+                  d.innerRadius = 0;
+                  d.outerRadius = radius;
+                  return "translate(" + arc.centroid(d) + ")";
+                })
+                .attr("text-anchor", "middle")
+                .text(function (d, i) {
+                  return d.data.prct;
+                });
+
+              tooltip = d3
+                .select("#layout")
+                .append("div")
+                .attr("class", "tooltip")
+                .style("position", "absolute")
+                .style("z-index", "10")
+                .style("text-align", "left")
+                .style("visibility", "hidden")
+                .style("padding", "10px")
+                .style("background", "rgba(0,0,0,0.6)")
+                .style("border-radius", "4px")
+                .style("color", "#fff")
+                .text("a simple tooltip");
+
+              slices
+                .on("mouseover", function (d) {
+                  console.log(d);
+                  d3.select(this)
+                    .transition()
+                    .duration(600)
+                    .attr(
+                      "transform",
+                      "translate(" +
+                        arc.centroid(d)[0] / 7 +
+                        "," +
+                        arc.centroid(d)[1] / 7 +
+                        ")"
+                    );
+                  tooltip
+                    .html(
+                      "Niveau d'étude: " +
+                        d.data.niv +
+                        "<br>" +
+                        "Nombre de réponses: " +
+                        d.data.sum +
+                        "<br>" +
+                        "total des réponses: " +
+                        d.data.sumN +
+                        "<br>" +
+                        "Pourcentage: " +
+                        d.data.prct +
+                        " %"
+                    )
+                    .style("visibility", "visible");
+                })
+                .on("mousemove", function (d) {
+                  tooltip
+                    .style("top", d3.event.pageY - 10 + "px")
+                    .style("left", d3.event.pageX + 10 + "px");
+                });
+
+              slices
+                .on("mouseout", function () {
+                  d3.select(this)
+                    .transition()
+                    .duration(500)
+                    .attr("transform", "translate(0, 0)");
+                })
+                .on("mouseleave", function () {
+                  tooltip.html(``).style("visibility", "hidden");
+                });
+
+              svg
+                .append("text")
+                .attr("class", "title")
+                .attr("x", width / 2 + margin)
+                .attr("y", 40)
+                .attr("text-anchor", "middle")
+                .text(
+                  "Pourcentage de la maladie (" +
+                    output.value +
+                    ") par niveau d'étude"
+                );
+
+              svg
+                .append("text")
+                .attr("class", "source")
+                .attr("x", width - margin / 2)
+                .attr("y", height + margin * 1.7)
+                .attr("text-anchor", "start")
+                .text("Source: MNT, 2020");
+
+              svg
+                .append("text")
+                .attr("class", "title")
+                .attr("x", 40 + margin)
+                .attr("y", 40)
+                .attr("text-anchor", "middle")
+                .text("Diagramme circulaire");
+
+              //Legend
+              var legend = svg
+                .selectAll(".legend")
+                .data(
+                  objects.map(function (d) {
+                    return d.niv;
+                  })
+                )
+                .enter()
+                .append("g")
+                .attr("class", "legend")
+                .attr("transform", function (d, i) {
+                  return "translate(0," + i * 20 + ")";
+                })
+                .style("opacity", "0");
+
+              legend
+                .append("rect")
+                .attr("y", margin)
+                .attr("x", width - margin - 18)
+                .attr("width", 18)
+                .attr("height", 18)
+                .style("fill", function (d, i) {
+                  return color(i);
+                });
+
+              legend
+                .append("text")
+                .attr("x", width - margin - 24)
+                .attr("y", margin + 9)
+                .attr("dy", ".35em")
+                .style("text-anchor", "end")
+                .text(function (d) {
+                  return d;
+                });
+
+              legend
+                .transition()
+                .duration(500)
+                .delay(function (d, i) {
+                  return 1300 + 100 * i;
+                })
+                .style("opacity", "1");
+            });
+          } else {
+            if (by == "Activity") {
+              d3.csv("MNT.csv").then(function (data) {
+                let actsDup1D = [];
+                let acts2D = [];
+                let maxheight = 0;
+
+                data.forEach(function (d) {
+                  actsDup1D.push(
+                    d["4.Quelles est votre activité  professionnelle"]
+                  );
+                });
+                let acts1D = Array.from(new Set(actsDup1D));
+                acts1D.forEach(function (a) {
+                  acts2D.push([a, 0, 0, 0, "#4ea8de"]);
+                });
+
+                acts2D.forEach(function (a) {
+                  data.forEach(function (d) {
+                    if (
+                      d["4.Quelles est votre activité  professionnelle"] == a[0]
+                    ) {
+                      if (
+                        d["25.si oui c'est quoi la maladies?"] == output.value
+                      ) {
+                        a[1] = a[1] + 1;
+                      }
+                      a[2] = a[2] + 1;
+                    }
+                    a[3] = ((a[1] / a[2]) * 100).toFixed(1);
+                  });
+                  if (a[3] > maxheight) {
+                    maxheight = Math.ceil(a[3] / 5) * 5;
+                  }
+                });
+
+                const keys = ["act", "sum", "sumAge", "prct", "color"];
+                const values = acts2D;
+                const objects = values.map((array) => {
+                  const object = {};
+
+                  keys.forEach((key, i) => (object[key] = array[i]));
+
+                  return object;
+                });
+                //JSON.stringify(objects);
+                console.log(objects);
+
+                var color = d3
+                  .scaleOrdinal()
+                  .domain(objects.map((obj) => obj.act))
+                  .range(colors);
+
+                const widthP = 1400,
+                  heightP = 600,
+                  radius = 200,
+                  innerradius = 0;
+
+                var arc = d3.arc().outerRadius(radius).innerRadius(innerradius);
+
+                const chart = svg
+                  .append("g")
+                  .attr("width", widthP)
+                  .attr("height", heightP)
+                  .append("g")
+                  .attr("class", "piechart")
+                  .attr(
+                    "transform",
+                    "translate(" + widthP / 2 + "," + heightP / 2 + ")"
+                  );
+                var pie = d3
+                  .pie()
+                  .sort(null)
+                  .value(function (d) {
+                    return d.prct;
+                  });
+
+                var segments = chart.append("g").attr("class", "segments");
+
+                var slices = segments
+                  .selectAll(".arc")
+                  .data(pie(objects))
+                  .enter()
+                  .append("g")
+                  .attr("class", "arc");
+
+                slices
+                  .append("path")
+                  .attr("d", arc)
+                  .attr("stroke", "white")
+                  .attr("stroke-width", "1")
+                  .attr("stroke-linejoin", "round")
+                  .attr("fill", function (d, i) {
+                    return color(i);
+                  })
+                  .transition()
+                  .attrTween("d", function (d) {
+                    var i = d3.interpolate(d.startAngle + 0.1, d.endAngle);
+                    return function (t) {
+                      d.endAngle = i(t);
+                      return arc(d);
+                    };
+                  });
+
+                // draw label
+                slices
+                  .append("text")
+                  .attr("transform", function (d) {
+                    d.innerRadius = 0;
+                    d.outerRadius = radius;
+                    return "translate(" + arc.centroid(d) + ")";
+                  })
+                  .attr("text-anchor", "middle")
+                  .text(function (d, i) {
+                    return d.data.prct;
+                  });
+
+                tooltip = d3
+                  .select("#layout")
+                  .append("div")
+                  .attr("class", "tooltip")
+                  .style("position", "absolute")
+                  .style("z-index", "10")
+                  .style("text-align", "left")
+                  .style("visibility", "hidden")
+                  .style("padding", "10px")
+                  .style("background", "rgba(0,0,0,0.6)")
+                  .style("border-radius", "4px")
+                  .style("color", "#fff")
+                  .text("a simple tooltip");
+
+                slices
+                  .on("mouseover", function (d) {
+                    console.log(d);
+                    d3.select(this)
+                      .transition()
+                      .duration(600)
+                      .attr(
+                        "transform",
+                        "translate(" +
+                          arc.centroid(d)[0] / 7 +
+                          "," +
+                          arc.centroid(d)[1] / 7 +
+                          ")"
+                      );
+                    tooltip
+                      .html(
+                        "Activité professionnelle: " +
+                          d.data.act +
+                          "<br>" +
+                          "Nombre de réponses: " +
+                          d.data.sum +
+                          "<br>" +
+                          "total des réponses: " +
+                          d.data.sumAge +
+                          "<br>" +
+                          "Pourcentage: " +
+                          d.data.prct +
+                          " %"
+                      )
+                      .style("visibility", "visible");
+                  })
+                  .on("mousemove", function (d) {
+                    tooltip
+                      .style("top", d3.event.pageY - 10 + "px")
+                      .style("left", d3.event.pageX + 10 + "px");
+                  });
+
+                slices
+                  .on("mouseout", function () {
+                    d3.select(this)
+                      .transition()
+                      .duration(500)
+                      .attr("transform", "translate(0, 0)");
+                  })
+                  .on("mouseleave", function () {
+                    tooltip.html(``).style("visibility", "hidden");
+                  });
+
+                svg
+                  .append("text")
+                  .attr("class", "title")
+                  .attr("x", width / 2 + margin)
+                  .attr("y", 40)
+                  .attr("text-anchor", "middle")
+                  .text(
+                    "Pourcentage de la maladie (" +
+                      output.value +
+                      ") par activité professionnelle"
+                  );
+
+                svg
+                  .append("text")
+                  .attr("class", "source")
+                  .attr("x", width - margin / 2)
+                  .attr("y", height + margin * 1.7)
+                  .attr("text-anchor", "start")
+                  .text("Source: MNT, 2020");
+
+                svg
+                  .append("text")
+                  .attr("class", "title")
+                  .attr("x", 40 + margin)
+                  .attr("y", 40)
+                  .attr("text-anchor", "middle")
+                  .text("Diagramme circulaire");
+
+                //Legend
+                var legend = svg
+                  .selectAll(".legend")
+                  .data(
+                    objects.map(function (d) {
+                      return d.act;
+                    })
+                  )
+                  .enter()
+                  .append("g")
+                  .attr("class", "legend")
+                  .attr("transform", function (d, i) {
+                    return "translate(0," + i * 20 + ")";
+                  })
+                  .style("opacity", "0");
+
+                legend
+                  .append("rect")
+                  .attr("y", margin)
+                  .attr("x", width - margin - 18)
+                  .attr("width", 18)
+                  .attr("height", 18)
+                  .style("fill", function (d, i) {
+                    return color(i);
+                  });
+
+                legend
+                  .append("text")
+                  .attr("x", width - margin - 24)
+                  .attr("y", margin + 9)
+                  .attr("dy", ".35em")
+                  .style("text-anchor", "end")
+                  .text(function (d) {
+                    return d;
+                  });
+
+                legend
+                  .transition()
+                  .duration(500)
+                  .delay(function (d, i) {
+                    return 1300 + 100 * i;
+                  })
+                  .style("opacity", "1");
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 function Draw(what, by, grouped) {
   svg.selectAll("*").remove();
   const chart = svg
@@ -397,7 +3463,7 @@ function Draw(what, by, grouped) {
           });
           let regions1D = Array.from(new Set(regionsDup1D));
           regions1D.forEach(function (w) {
-            regions2D.push([w, 0, 0, 0, "#4ea8de"]);
+            regions2D.push([w, 0, 0, 0, 0, 0, "#4ea8de"]);
           });
 
           regions2D.forEach(function (w) {
@@ -406,14 +3472,24 @@ function Draw(what, by, grouped) {
                 w[1] = w[1] + 1;
                 w[2] = w[2] + parseInt(d["2.Quel âge avez-vous ?"]);
               }
+              w[4] = w[4] + 1;
               w[3] = (w[2] / w[1]).toFixed(1);
             });
+            w[5] = ((w[1] / w[4]) * 100).toFixed(1);
             if (w[3] > maxheight) {
               maxheight = Math.ceil(w[3] / 5) * 5;
             }
           });
 
-          const keys = ["wilaya", "sum", "sumAge", "avrg", "color"];
+          const keys = [
+            "wilaya",
+            "sum",
+            "sumAge",
+            "avrg",
+            "sumW",
+            "prct",
+            "color",
+          ];
           const values = regions2D;
           const objects = values.map((array) => {
             const object = {};
@@ -450,6 +3526,20 @@ function Draw(what, by, grouped) {
             .attr("class", "grid")
             .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+          tooltip = d3
+            .select("#layout")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("text-align", "left")
+            .style("visibility", "hidden")
+            .style("padding", "10px")
+            .style("background", "rgba(0,0,0,0.6)")
+            .style("border-radius", "4px")
+            .style("color", "#fff")
+            .text("a simple tooltip");
+
           const barGroups = chart.selectAll().data(objects).enter().append("g");
 
           barGroups
@@ -460,6 +3550,27 @@ function Draw(what, by, grouped) {
             .style("fill", (g) => g.color)
             .attr("height", (g) => height - yScale(g.avrg))
             .attr("width", xScale.bandwidth())
+            .on("mouseover", function (a) {
+              tooltip
+                .html(
+                  "Wilaya: " +
+                    a.wilaya +
+                    "<br>" +
+                    "Nombre de réponses: " +
+                    a.sum +
+                    "<br>" +
+                    "total des réponses: " +
+                    a.sumW +
+                    "<br>" +
+                    "Moyenne: " +
+                    a.avrg +
+                    "<br>" +
+                    "Pourcentage: " +
+                    a.prct +
+                    " %"
+                )
+                .style("visibility", "visible");
+            })
             .on("mouseenter", function (actual, i) {
               d3.selectAll(".avrg").attr("opacity", 0);
 
@@ -497,6 +3608,11 @@ function Draw(what, by, grouped) {
                   return idx !== i ? text : "";
                 });
             })
+            .on("mousemove", function (d) {
+              tooltip
+                .style("top", d3.event.pageY - 10 + "px")
+                .style("left", d3.event.pageX + 10 + "px");
+            })
             .on("mouseleave", function () {
               d3.selectAll(".avrg").attr("opacity", 1);
 
@@ -509,6 +3625,7 @@ function Draw(what, by, grouped) {
 
               chart.selectAll("#limit").remove();
               chart.selectAll(".divergence").remove();
+              tooltip.html(``).style("visibility", "hidden");
             });
 
           barGroups
@@ -546,6 +3663,14 @@ function Draw(what, by, grouped) {
 
           svg
             .append("text")
+            .attr("class", "title")
+            .attr("x", 40 + margin)
+            .attr("y", 40)
+            .attr("text-anchor", "middle")
+            .text("Diagramme de barres");
+
+          svg
+            .append("text")
             .attr("class", "source")
             .attr("x", width - margin / 2)
             .attr("y", height + margin * 1.7)
@@ -564,7 +3689,7 @@ function Draw(what, by, grouped) {
             });
             let sexes1D = Array.from(new Set(sexesDup1D));
             sexes1D.forEach(function (s) {
-              sexes2D.push([s, 0, 0, 0, "#4ea8de"]);
+              sexes2D.push([s, 0, 0, 0, 0, 0, "#4ea8de"]);
             });
 
             sexes2D.forEach(function (s) {
@@ -573,14 +3698,24 @@ function Draw(what, by, grouped) {
                   s[1] = s[1] + 1;
                   s[2] = s[2] + parseInt(d["2.Quel âge avez-vous ?"]);
                 }
+                s[4] = s[4] + 1;
                 s[3] = (s[2] / s[1]).toFixed(1);
               });
+              s[5] = ((s[1] / s[4]) * 100).toFixed(1);
               if (s[3] > maxheight) {
                 maxheight = Math.ceil(s[3] / 2) * 2;
               }
             });
 
-            const keys = ["sexe", "sum", "sumAge", "avrg", "color"];
+            const keys = [
+              "sexe",
+              "sum",
+              "sumAge",
+              "avrg",
+              "sumW",
+              "prct",
+              "color",
+            ];
             const values = sexes2D;
             const objects = values.map((array) => {
               const object = {};
@@ -617,6 +3752,20 @@ function Draw(what, by, grouped) {
               .attr("class", "grid")
               .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+            tooltip = d3
+              .select("#layout")
+              .append("div")
+              .attr("class", "tooltip")
+              .style("position", "absolute")
+              .style("z-index", "10")
+              .style("text-align", "left")
+              .style("visibility", "hidden")
+              .style("padding", "10px")
+              .style("background", "rgba(0,0,0,0.6)")
+              .style("border-radius", "4px")
+              .style("color", "#fff")
+              .text("a simple tooltip");
+
             const barGroups = chart
               .selectAll()
               .data(objects)
@@ -631,6 +3780,27 @@ function Draw(what, by, grouped) {
               .style("fill", (g) => g.color)
               .attr("height", (g) => height - yScale(g.avrg))
               .attr("width", xScale.bandwidth())
+              .on("mouseover", function (a) {
+                tooltip
+                  .html(
+                    "Sexe: " +
+                      a.sexe +
+                      "<br>" +
+                      "Nombre de réponses: " +
+                      a.sum +
+                      "<br>" +
+                      "total des réponses: " +
+                      a.sumW +
+                      "<br>" +
+                      "Moyenne: " +
+                      a.avrg +
+                      "<br>" +
+                      "Pourcentage: " +
+                      a.prct +
+                      " %"
+                  )
+                  .style("visibility", "visible");
+              })
               .on("mouseenter", function (actual, i) {
                 d3.selectAll(".avrg").attr("opacity", 0);
 
@@ -668,6 +3838,11 @@ function Draw(what, by, grouped) {
                     return idx !== i ? text : "";
                   });
               })
+              .on("mousemove", function (d) {
+                tooltip
+                  .style("top", d3.event.pageY - 10 + "px")
+                  .style("left", d3.event.pageX + 10 + "px");
+              })
               .on("mouseleave", function () {
                 d3.selectAll(".avrg").attr("opacity", 1);
 
@@ -680,6 +3855,7 @@ function Draw(what, by, grouped) {
 
                 chart.selectAll("#limit").remove();
                 chart.selectAll(".divergence").remove();
+                tooltip.html(``).style("visibility", "hidden");
               });
 
             barGroups
@@ -717,6 +3893,14 @@ function Draw(what, by, grouped) {
 
             svg
               .append("text")
+              .attr("class", "title")
+              .attr("x", 40 + margin)
+              .attr("y", 40)
+              .attr("text-anchor", "middle")
+              .text("Diagramme de barres");
+
+            svg
+              .append("text")
               .attr("class", "source")
               .attr("x", width - margin / 2)
               .attr("y", height + margin * 1.7)
@@ -735,7 +3919,7 @@ function Draw(what, by, grouped) {
               });
               let nivs1D = Array.from(new Set(nivsDup1D));
               nivs1D.forEach(function (n) {
-                nivs2D.push([n, 0, 0, 0, "#4ea8de"]);
+                nivs2D.push([n, 0, 0, 0, 0, 0, "#4ea8de"]);
               });
 
               nivs2D.forEach(function (n) {
@@ -744,14 +3928,24 @@ function Draw(what, by, grouped) {
                     n[1] = n[1] + 1;
                     n[2] = n[2] + parseInt(d["2.Quel âge avez-vous ?"]);
                   }
+                  n[4] = n[4] + 1;
                   n[3] = (n[2] / n[1]).toFixed(1);
                 });
+                n[5] = ((n[1] / n[4]) * 100).toFixed(1);
                 if (n[3] > maxheight) {
                   maxheight = Math.ceil(n[3] / 5) * 5;
                 }
               });
 
-              const keys = ["niv", "sum", "sumAge", "avrg", "color"];
+              const keys = [
+                "niv",
+                "sum",
+                "sumAge",
+                "avrg",
+                "sumW",
+                "prct",
+                "color",
+              ];
               const values = nivs2D;
               const objects = values.map((array) => {
                 const object = {};
@@ -788,6 +3982,20 @@ function Draw(what, by, grouped) {
                 .attr("class", "grid")
                 .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+              tooltip = d3
+                .select("#layout")
+                .append("div")
+                .attr("class", "tooltip")
+                .style("position", "absolute")
+                .style("z-index", "10")
+                .style("text-align", "left")
+                .style("visibility", "hidden")
+                .style("padding", "10px")
+                .style("background", "rgba(0,0,0,0.6)")
+                .style("border-radius", "4px")
+                .style("color", "#fff")
+                .text("a simple tooltip");
+
               const barGroups = chart
                 .selectAll()
                 .data(objects)
@@ -802,6 +4010,27 @@ function Draw(what, by, grouped) {
                 .style("fill", (g) => g.color)
                 .attr("height", (g) => height - yScale(g.avrg))
                 .attr("width", xScale.bandwidth())
+                .on("mouseover", function (a) {
+                  tooltip
+                    .html(
+                      "Niveau d'étude: " +
+                        a.niv +
+                        "<br>" +
+                        "Nombre de réponses: " +
+                        a.sum +
+                        "<br>" +
+                        "total des réponses: " +
+                        a.sumW +
+                        "<br>" +
+                        "Moyenne: " +
+                        a.avrg +
+                        "<br>" +
+                        "Pourcentage: " +
+                        a.prct +
+                        " %"
+                    )
+                    .style("visibility", "visible");
+                })
                 .on("mouseenter", function (actual, i) {
                   d3.selectAll(".avrg").attr("opacity", 0);
 
@@ -839,6 +4068,11 @@ function Draw(what, by, grouped) {
                       return idx !== i ? text : "";
                     });
                 })
+                .on("mousemove", function (d) {
+                  tooltip
+                    .style("top", d3.event.pageY - 10 + "px")
+                    .style("left", d3.event.pageX + 10 + "px");
+                })
                 .on("mouseleave", function () {
                   d3.selectAll(".avrg").attr("opacity", 1);
 
@@ -851,6 +4085,7 @@ function Draw(what, by, grouped) {
 
                   chart.selectAll("#limit").remove();
                   chart.selectAll(".divergence").remove();
+                  tooltip.html(``).style("visibility", "hidden");
                 });
 
               barGroups
@@ -888,6 +4123,14 @@ function Draw(what, by, grouped) {
 
               svg
                 .append("text")
+                .attr("class", "title")
+                .attr("x", 40 + margin)
+                .attr("y", 40)
+                .attr("text-anchor", "middle")
+                .text("Diagramme de barres");
+
+              svg
+                .append("text")
                 .attr("class", "source")
                 .attr("x", width - margin / 2)
                 .attr("y", height + margin * 1.7)
@@ -908,7 +4151,7 @@ function Draw(what, by, grouped) {
                 });
                 let acts1D = Array.from(new Set(actsDup1D));
                 acts1D.forEach(function (a) {
-                  acts2D.push([a, 0, 0, 0, "#4ea8de"]);
+                  acts2D.push([a, 0, 0, 0, 0, 0, "#4ea8de"]);
                 });
 
                 acts2D.forEach(function (a) {
@@ -919,14 +4162,24 @@ function Draw(what, by, grouped) {
                       a[1] = a[1] + 1;
                       a[2] = a[2] + parseInt(d["2.Quel âge avez-vous ?"]);
                     }
+                    a[4] = a[4] + 1;
                     a[3] = (a[2] / a[1]).toFixed(1);
                   });
+                  a[5] = ((a[1] / a[4]) * 100).toFixed(1);
                   if (a[3] > maxheight) {
                     maxheight = Math.ceil(a[3] / 5) * 5;
                   }
                 });
 
-                const keys = ["act", "sum", "sumAge", "avrg", "color"];
+                const keys = [
+                  "act",
+                  "sum",
+                  "sumAge",
+                  "avrg",
+                  "sumW",
+                  "prct",
+                  "color",
+                ];
                 const values = acts2D;
                 const objects = values.map((array) => {
                   const object = {};
@@ -963,6 +4216,20 @@ function Draw(what, by, grouped) {
                   .attr("class", "grid")
                   .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+                tooltip = d3
+                  .select("#layout")
+                  .append("div")
+                  .attr("class", "tooltip")
+                  .style("position", "absolute")
+                  .style("z-index", "10")
+                  .style("text-align", "left")
+                  .style("visibility", "hidden")
+                  .style("padding", "10px")
+                  .style("background", "rgba(0,0,0,0.6)")
+                  .style("border-radius", "4px")
+                  .style("color", "#fff")
+                  .text("a simple tooltip");
+
                 const barGroups = chart
                   .selectAll()
                   .data(objects)
@@ -977,6 +4244,27 @@ function Draw(what, by, grouped) {
                   .style("fill", (g) => g.color)
                   .attr("height", (g) => height - yScale(g.avrg))
                   .attr("width", xScale.bandwidth())
+                  .on("mouseover", function (a) {
+                    tooltip
+                      .html(
+                        "Activité professionnelle: " +
+                          a.act +
+                          "<br>" +
+                          "Nombre de réponses: " +
+                          a.sum +
+                          "<br>" +
+                          "total des réponses: " +
+                          a.sumW +
+                          "<br>" +
+                          "Moyenne: " +
+                          a.avrg +
+                          "<br>" +
+                          "Pourcentage: " +
+                          a.prct +
+                          " %"
+                      )
+                      .style("visibility", "visible");
+                  })
                   .on("mouseenter", function (actual, i) {
                     d3.selectAll(".avrg").attr("opacity", 0);
 
@@ -1014,6 +4302,11 @@ function Draw(what, by, grouped) {
                         return idx !== i ? text : "";
                       });
                   })
+                  .on("mousemove", function (d) {
+                    tooltip
+                      .style("top", d3.event.pageY - 10 + "px")
+                      .style("left", d3.event.pageX + 10 + "px");
+                  })
                   .on("mouseleave", function () {
                     d3.selectAll(".avrg").attr("opacity", 1);
 
@@ -1026,6 +4319,7 @@ function Draw(what, by, grouped) {
 
                     chart.selectAll("#limit").remove();
                     chart.selectAll(".divergence").remove();
+                    tooltip.html(``).style("visibility", "hidden");
                   });
 
                 barGroups
@@ -1063,6 +4357,14 @@ function Draw(what, by, grouped) {
 
                 svg
                   .append("text")
+                  .attr("class", "title")
+                  .attr("x", 40 + margin)
+                  .attr("y", 40)
+                  .attr("text-anchor", "middle")
+                  .text("Diagramme de barres");
+
+                svg
+                  .append("text")
                   .attr("class", "source")
                   .attr("x", width - margin / 2)
                   .attr("y", height + margin * 1.7)
@@ -1087,7 +4389,7 @@ function Draw(what, by, grouped) {
           });
           let regions1D = Array.from(new Set(regionsDup1D));
           regions1D.forEach(function (w) {
-            regions2D.push([w, 0, "#4ea8de"]);
+            regions2D.push([w, 0, 0, 0, "#4ea8de"]);
           });
 
           regions2D.forEach(function (w) {
@@ -1095,13 +4397,15 @@ function Draw(what, by, grouped) {
               if (d["2.wilaya"] == w[0]) {
                 w[1] = w[1] + 1;
               }
+              w[2] = w[2] + 1;
             });
+            w[3] = ((w[1] / w[2]) * 100).toFixed(1);
             if (w[1] > maxheight) {
               maxheight = Math.ceil(w[1] / 5) * 5;
             }
           });
 
-          const keys = ["wilaya", "sum", "color"];
+          const keys = ["wilaya", "sum", "sumW", "prct", "color"];
           const values = regions2D;
           const objects = values.map((array) => {
             const object = {};
@@ -1138,6 +4442,20 @@ function Draw(what, by, grouped) {
             .attr("class", "grid")
             .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+          tooltip = d3
+            .select("#layout")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("text-align", "left")
+            .style("visibility", "hidden")
+            .style("padding", "10px")
+            .style("background", "rgba(0,0,0,0.6)")
+            .style("border-radius", "4px")
+            .style("color", "#fff")
+            .text("a simple tooltip");
+
           const barGroups = chart.selectAll().data(objects).enter().append("g");
 
           barGroups
@@ -1148,6 +4466,24 @@ function Draw(what, by, grouped) {
             .style("fill", (g) => g.color)
             .attr("height", (g) => height - yScale(g.sum))
             .attr("width", xScale.bandwidth())
+            .on("mouseover", function (a) {
+              tooltip
+                .html(
+                  "Wilaya: " +
+                    a.wilaya +
+                    "<br>" +
+                    "Nombre de réponses: " +
+                    a.sum +
+                    "<br>" +
+                    "total des réponses: " +
+                    a.sumW +
+                    "<br>" +
+                    "Pourcentage: " +
+                    a.prct +
+                    " %"
+                )
+                .style("visibility", "visible");
+            })
             .on("mouseenter", function (actual, i) {
               d3.selectAll(".sum").attr("opacity", 0);
 
@@ -1185,6 +4521,11 @@ function Draw(what, by, grouped) {
                   return idx !== i ? text : "";
                 });
             })
+            .on("mousemove", function (d) {
+              tooltip
+                .style("top", d3.event.pageY - 10 + "px")
+                .style("left", d3.event.pageX + 10 + "px");
+            })
             .on("mouseleave", function () {
               d3.selectAll(".sum").attr("opacity", 1);
 
@@ -1197,6 +4538,7 @@ function Draw(what, by, grouped) {
 
               chart.selectAll("#limit").remove();
               chart.selectAll(".divergence").remove();
+              tooltip.html(``).style("visibility", "hidden");
             });
 
           barGroups
@@ -1234,6 +4576,14 @@ function Draw(what, by, grouped) {
 
           svg
             .append("text")
+            .attr("class", "title")
+            .attr("x", 40 + margin)
+            .attr("y", 40)
+            .attr("text-anchor", "middle")
+            .text("Diagramme de barres");
+
+          svg
+            .append("text")
             .attr("class", "source")
             .attr("x", width - margin / 2)
             .attr("y", height + margin * 1.7)
@@ -1252,7 +4602,7 @@ function Draw(what, by, grouped) {
             });
             let sexes1D = Array.from(new Set(sexesDup1D));
             sexes1D.forEach(function (s) {
-              sexes2D.push([s, 0, "#4ea8de"]);
+              sexes2D.push([s, 0, 0, 0, "#4ea8de"]);
             });
 
             sexes2D.forEach(function (s) {
@@ -1260,13 +4610,15 @@ function Draw(what, by, grouped) {
                 if (d["1.sexe"] == s[0]) {
                   s[1] = s[1] + 1;
                 }
+                s[2] = s[2] + 1;
               });
+              s[3] = ((s[1] / s[2]) * 100).toFixed(1);
               if (s[1] > maxheight) {
                 maxheight = Math.ceil(s[1] / 5) * 5;
               }
             });
 
-            const keys = ["sexe", "sum", "color"];
+            const keys = ["sexe", "sum", "sumW", "prct", "color"];
             const values = sexes2D;
             const objects = values.map((array) => {
               const object = {};
@@ -1303,6 +4655,20 @@ function Draw(what, by, grouped) {
               .attr("class", "grid")
               .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+            tooltip = d3
+              .select("#layout")
+              .append("div")
+              .attr("class", "tooltip")
+              .style("position", "absolute")
+              .style("z-index", "10")
+              .style("text-align", "left")
+              .style("visibility", "hidden")
+              .style("padding", "10px")
+              .style("background", "rgba(0,0,0,0.6)")
+              .style("border-radius", "4px")
+              .style("color", "#fff")
+              .text("a simple tooltip");
+
             const barGroups = chart
               .selectAll()
               .data(objects)
@@ -1317,6 +4683,24 @@ function Draw(what, by, grouped) {
               .style("fill", (g) => g.color)
               .attr("height", (g) => height - yScale(g.sum))
               .attr("width", xScale.bandwidth())
+              .on("mouseover", function (a) {
+                tooltip
+                  .html(
+                    "Sexe: " +
+                      a.sexe +
+                      "<br>" +
+                      "Nombre de réponses: " +
+                      a.sum +
+                      "<br>" +
+                      "total des réponses: " +
+                      a.sumW +
+                      "<br>" +
+                      "Pourcentage: " +
+                      a.prct +
+                      " %"
+                  )
+                  .style("visibility", "visible");
+              })
               .on("mouseenter", function (actual, i) {
                 d3.selectAll(".sum").attr("opacity", 0);
 
@@ -1354,6 +4738,11 @@ function Draw(what, by, grouped) {
                     return idx !== i ? text : "";
                   });
               })
+              .on("mousemove", function (d) {
+                tooltip
+                  .style("top", d3.event.pageY - 10 + "px")
+                  .style("left", d3.event.pageX + 10 + "px");
+              })
               .on("mouseleave", function () {
                 d3.selectAll(".sum").attr("opacity", 1);
 
@@ -1366,6 +4755,7 @@ function Draw(what, by, grouped) {
 
                 chart.selectAll("#limit").remove();
                 chart.selectAll(".divergence").remove();
+                tooltip.html(``).style("visibility", "hidden");
               });
 
             barGroups
@@ -1403,6 +4793,14 @@ function Draw(what, by, grouped) {
 
             svg
               .append("text")
+              .attr("class", "title")
+              .attr("x", 40 + margin)
+              .attr("y", 40)
+              .attr("text-anchor", "middle")
+              .text("Diagramme de barres");
+
+            svg
+              .append("text")
               .attr("class", "source")
               .attr("x", width - margin / 2)
               .attr("y", height + margin * 1.7)
@@ -1421,7 +4819,7 @@ function Draw(what, by, grouped) {
               });
               let nivs1D = Array.from(new Set(nivsDup1D));
               nivs1D.forEach(function (n) {
-                nivs2D.push([n, 0, "#4ea8de"]);
+                nivs2D.push([n, 0, 0, 0, "#4ea8de"]);
               });
 
               nivs2D.forEach(function (n) {
@@ -1429,13 +4827,15 @@ function Draw(what, by, grouped) {
                   if (d["3.Quel est votre niveau d'étude"] == n[0]) {
                     n[1] = n[1] + 1;
                   }
+                  n[2] = n[2] + 1;
                 });
+                n[3] = ((n[1] / n[2]) * 100).toFixed(1);
                 if (n[1] > maxheight) {
                   maxheight = Math.ceil(n[1] / 5) * 5;
                 }
               });
 
-              const keys = ["niv", "sum", "color"];
+              const keys = ["niv", "sum", "sumW", "prct", "color"];
               const values = nivs2D;
               const objects = values.map((array) => {
                 const object = {};
@@ -1472,6 +4872,20 @@ function Draw(what, by, grouped) {
                 .attr("class", "grid")
                 .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+              tooltip = d3
+                .select("#layout")
+                .append("div")
+                .attr("class", "tooltip")
+                .style("position", "absolute")
+                .style("z-index", "10")
+                .style("text-align", "left")
+                .style("visibility", "hidden")
+                .style("padding", "10px")
+                .style("background", "rgba(0,0,0,0.6)")
+                .style("border-radius", "4px")
+                .style("color", "#fff")
+                .text("a simple tooltip");
+
               const barGroups = chart
                 .selectAll()
                 .data(objects)
@@ -1486,6 +4900,24 @@ function Draw(what, by, grouped) {
                 .style("fill", (g) => g.color)
                 .attr("height", (g) => height - yScale(g.sum))
                 .attr("width", xScale.bandwidth())
+                .on("mouseover", function (a) {
+                  tooltip
+                    .html(
+                      "Niveau d'étude: " +
+                        a.niv +
+                        "<br>" +
+                        "Nombre de réponses: " +
+                        a.sum +
+                        "<br>" +
+                        "total des réponses: " +
+                        a.sumW +
+                        "<br>" +
+                        "Pourcentage: " +
+                        a.prct +
+                        " %"
+                    )
+                    .style("visibility", "visible");
+                })
                 .on("mouseenter", function (actual, i) {
                   d3.selectAll(".sum").attr("opacity", 0);
 
@@ -1523,6 +4955,11 @@ function Draw(what, by, grouped) {
                       return idx !== i ? text : "";
                     });
                 })
+                .on("mousemove", function (d) {
+                  tooltip
+                    .style("top", d3.event.pageY - 10 + "px")
+                    .style("left", d3.event.pageX + 10 + "px");
+                })
                 .on("mouseleave", function () {
                   d3.selectAll(".sum").attr("opacity", 1);
 
@@ -1535,6 +4972,7 @@ function Draw(what, by, grouped) {
 
                   chart.selectAll("#limit").remove();
                   chart.selectAll(".divergence").remove();
+                  tooltip.html(``).style("visibility", "hidden");
                 });
 
               barGroups
@@ -1572,6 +5010,14 @@ function Draw(what, by, grouped) {
 
               svg
                 .append("text")
+                .attr("class", "title")
+                .attr("x", 40 + margin)
+                .attr("y", 40)
+                .attr("text-anchor", "middle")
+                .text("Diagramme de barres");
+
+              svg
+                .append("text")
                 .attr("class", "source")
                 .attr("x", width - margin / 2)
                 .attr("y", height + margin * 1.7)
@@ -1592,7 +5038,7 @@ function Draw(what, by, grouped) {
                 });
                 let acts1D = Array.from(new Set(actsDup1D));
                 acts1D.forEach(function (a) {
-                  acts2D.push([a, 0, "#4ea8de"]);
+                  acts2D.push([a, 0, 0, 0, "#4ea8de"]);
                 });
 
                 acts2D.forEach(function (a) {
@@ -1602,13 +5048,15 @@ function Draw(what, by, grouped) {
                     ) {
                       a[1] = a[1] + 1;
                     }
+                    a[2] = a[2] + 1;
                   });
+                  a[3] = ((a[1] / a[2]) * 100).toFixed(1);
                   if (a[1] > maxheight) {
                     maxheight = Math.ceil(a[1] / 5) * 5;
                   }
                 });
 
-                const keys = ["act", "sum", "color"];
+                const keys = ["act", "sum", "sumW", "prct", "color"];
                 const values = acts2D;
                 const objects = values.map((array) => {
                   const object = {};
@@ -1645,6 +5093,20 @@ function Draw(what, by, grouped) {
                   .attr("class", "grid")
                   .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+                tooltip = d3
+                  .select("#layout")
+                  .append("div")
+                  .attr("class", "tooltip")
+                  .style("position", "absolute")
+                  .style("z-index", "10")
+                  .style("text-align", "left")
+                  .style("visibility", "hidden")
+                  .style("padding", "10px")
+                  .style("background", "rgba(0,0,0,0.6)")
+                  .style("border-radius", "4px")
+                  .style("color", "#fff")
+                  .text("a simple tooltip");
+
                 const barGroups = chart
                   .selectAll()
                   .data(objects)
@@ -1659,6 +5121,24 @@ function Draw(what, by, grouped) {
                   .style("fill", (g) => g.color)
                   .attr("height", (g) => height - yScale(g.sum))
                   .attr("width", xScale.bandwidth())
+                  .on("mouseover", function (a) {
+                    tooltip
+                      .html(
+                        "Activité professionnelle: " +
+                          a.act +
+                          "<br>" +
+                          "Nombre de réponses: " +
+                          a.sum +
+                          "<br>" +
+                          "total des réponses: " +
+                          a.sumW +
+                          "<br>" +
+                          "Pourcentage: " +
+                          a.prct +
+                          " %"
+                      )
+                      .style("visibility", "visible");
+                  })
                   .on("mouseenter", function (actual, i) {
                     d3.selectAll(".sum").attr("opacity", 0);
 
@@ -1696,6 +5176,11 @@ function Draw(what, by, grouped) {
                         return idx !== i ? text : "";
                       });
                   })
+                  .on("mousemove", function (d) {
+                    tooltip
+                      .style("top", d3.event.pageY - 10 + "px")
+                      .style("left", d3.event.pageX + 10 + "px");
+                  })
                   .on("mouseleave", function () {
                     d3.selectAll(".sum").attr("opacity", 1);
 
@@ -1708,6 +5193,7 @@ function Draw(what, by, grouped) {
 
                     chart.selectAll("#limit").remove();
                     chart.selectAll(".divergence").remove();
+                    tooltip.html(``).style("visibility", "hidden");
                   });
 
                 barGroups
@@ -1742,6 +5228,14 @@ function Draw(what, by, grouped) {
                   .attr("y", 40)
                   .attr("text-anchor", "middle")
                   .text("Le nombre de réponse par activité profesionnelle");
+
+                svg
+                  .append("text")
+                  .attr("class", "title")
+                  .attr("x", 40 + margin)
+                  .attr("y", 40)
+                  .attr("text-anchor", "middle")
+                  .text("Diagramme de barres");
 
                 svg
                   .append("text")
@@ -1824,6 +5318,20 @@ function Draw(what, by, grouped) {
             .attr("class", "grid")
             .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+          tooltip = d3
+            .select("#layout")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("text-align", "left")
+            .style("visibility", "hidden")
+            .style("padding", "10px")
+            .style("background", "rgba(0,0,0,0.6)")
+            .style("border-radius", "4px")
+            .style("color", "#fff")
+            .text("a simple tooltip");
+
           const barGroups = chart.selectAll().data(objects).enter().append("g");
 
           barGroups
@@ -1834,6 +5342,24 @@ function Draw(what, by, grouped) {
             .style("fill", (g) => g.color)
             .attr("height", (g) => height - yScale(g.prct))
             .attr("width", xScale.bandwidth())
+            .on("mouseover", function (a) {
+              tooltip
+                .html(
+                  "Wilaya: " +
+                    a.wilaya +
+                    "<br>" +
+                    "Nombre de réponses: " +
+                    a.sumDis +
+                    "<br>" +
+                    "total des réponses: " +
+                    a.sumReg +
+                    "<br>" +
+                    "Pourcentage: " +
+                    a.prct +
+                    " %"
+                )
+                .style("visibility", "visible");
+            })
             .on("mouseenter", function (actual, i) {
               d3.selectAll(".prct").attr("opacity", 0);
 
@@ -1871,6 +5397,11 @@ function Draw(what, by, grouped) {
                   return idx !== i ? text : "";
                 });
             })
+            .on("mousemove", function (d) {
+              tooltip
+                .style("top", d3.event.pageY - 10 + "px")
+                .style("left", d3.event.pageX + 10 + "px");
+            })
             .on("mouseleave", function () {
               d3.selectAll(".prct").attr("opacity", 1);
 
@@ -1883,6 +5414,7 @@ function Draw(what, by, grouped) {
 
               chart.selectAll("#limit").remove();
               chart.selectAll(".divergence").remove();
+              tooltip.html(``).style("visibility", "hidden");
             });
 
           barGroups
@@ -1919,6 +5451,14 @@ function Draw(what, by, grouped) {
             .text(
               "Pourcentage de la maladie (" + output.value + ") par wilaya"
             );
+
+          svg
+            .append("text")
+            .attr("class", "title")
+            .attr("x", 40 + margin)
+            .attr("y", 40)
+            .attr("text-anchor", "middle")
+            .text("Diagramme de barres");
 
           svg
             .append("text")
@@ -1995,6 +5535,20 @@ function Draw(what, by, grouped) {
               .attr("class", "grid")
               .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+            tooltip = d3
+              .select("#layout")
+              .append("div")
+              .attr("class", "tooltip")
+              .style("position", "absolute")
+              .style("z-index", "10")
+              .style("text-align", "left")
+              .style("visibility", "hidden")
+              .style("padding", "10px")
+              .style("background", "rgba(0,0,0,0.6)")
+              .style("border-radius", "4px")
+              .style("color", "#fff")
+              .text("a simple tooltip");
+
             const barGroups = chart
               .selectAll()
               .data(objects)
@@ -2009,6 +5563,24 @@ function Draw(what, by, grouped) {
               .style("fill", (g) => g.color)
               .attr("height", (g) => height - yScale(g.prct))
               .attr("width", xScale.bandwidth())
+              .on("mouseover", function (a) {
+                tooltip
+                  .html(
+                    "Sexe: " +
+                      a.sexe +
+                      "<br>" +
+                      "Nombre de réponses: " +
+                      a.sumDis +
+                      "<br>" +
+                      "total des réponses: " +
+                      a.sumS +
+                      "<br>" +
+                      "Pourcentage: " +
+                      a.prct +
+                      " %"
+                  )
+                  .style("visibility", "visible");
+              })
               .on("mouseenter", function (actual, i) {
                 d3.selectAll(".prct").attr("opacity", 0);
 
@@ -2046,6 +5618,11 @@ function Draw(what, by, grouped) {
                     return idx !== i ? text : "";
                   });
               })
+              .on("mousemove", function (d) {
+                tooltip
+                  .style("top", d3.event.pageY - 10 + "px")
+                  .style("left", d3.event.pageX + 10 + "px");
+              })
               .on("mouseleave", function () {
                 d3.selectAll(".prct").attr("opacity", 1);
 
@@ -2058,6 +5635,7 @@ function Draw(what, by, grouped) {
 
                 chart.selectAll("#limit").remove();
                 chart.selectAll(".divergence").remove();
+                tooltip.html(``).style("visibility", "hidden");
               });
 
             barGroups
@@ -2094,6 +5672,14 @@ function Draw(what, by, grouped) {
               .text(
                 "Pourcentage de la maladie (" + output.value + ") par sexe"
               );
+
+            svg
+              .append("text")
+              .attr("class", "title")
+              .attr("x", 40 + margin)
+              .attr("y", 40)
+              .attr("text-anchor", "middle")
+              .text("Diagramme de barres");
 
             svg
               .append("text")
@@ -2172,6 +5758,20 @@ function Draw(what, by, grouped) {
                 .attr("class", "grid")
                 .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+              tooltip = d3
+                .select("#layout")
+                .append("div")
+                .attr("class", "tooltip")
+                .style("position", "absolute")
+                .style("z-index", "10")
+                .style("text-align", "left")
+                .style("visibility", "hidden")
+                .style("padding", "10px")
+                .style("background", "rgba(0,0,0,0.6)")
+                .style("border-radius", "4px")
+                .style("color", "#fff")
+                .text("a simple tooltip");
+
               const barGroups = chart
                 .selectAll()
                 .data(objects)
@@ -2186,6 +5786,24 @@ function Draw(what, by, grouped) {
                 .style("fill", (g) => g.color)
                 .attr("height", (g) => height - yScale(g.prct))
                 .attr("width", xScale.bandwidth())
+                .on("mouseover", function (a) {
+                  tooltip
+                    .html(
+                      "Niveau d'étude: " +
+                        a.niv +
+                        "<br>" +
+                        "Nombre de réponses: " +
+                        a.sumDis +
+                        "<br>" +
+                        "total des réponses: " +
+                        a.sumN +
+                        "<br>" +
+                        "Pourcentage: " +
+                        a.prct +
+                        " %"
+                    )
+                    .style("visibility", "visible");
+                })
                 .on("mouseenter", function (actual, i) {
                   d3.selectAll(".prct").attr("opacity", 0);
 
@@ -2223,6 +5841,11 @@ function Draw(what, by, grouped) {
                       return idx !== i ? text : "";
                     });
                 })
+                .on("mousemove", function (d) {
+                  tooltip
+                    .style("top", d3.event.pageY - 10 + "px")
+                    .style("left", d3.event.pageX + 10 + "px");
+                })
                 .on("mouseleave", function () {
                   d3.selectAll(".prct").attr("opacity", 1);
 
@@ -2235,6 +5858,7 @@ function Draw(what, by, grouped) {
 
                   chart.selectAll("#limit").remove();
                   chart.selectAll(".divergence").remove();
+                  tooltip.html(``).style("visibility", "hidden");
                 });
 
               barGroups
@@ -2273,6 +5897,14 @@ function Draw(what, by, grouped) {
                     output.value +
                     ") par niveaux d'études"
                 );
+
+              svg
+                .append("text")
+                .attr("class", "title")
+                .attr("x", 40 + margin)
+                .attr("y", 40)
+                .attr("text-anchor", "middle")
+                .text("Diagramme de barres");
 
               svg
                 .append("text")
@@ -2355,6 +5987,20 @@ function Draw(what, by, grouped) {
                   .attr("class", "grid")
                   .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+                tooltip = d3
+                  .select("#layout")
+                  .append("div")
+                  .attr("class", "tooltip")
+                  .style("position", "absolute")
+                  .style("z-index", "10")
+                  .style("text-align", "left")
+                  .style("visibility", "hidden")
+                  .style("padding", "10px")
+                  .style("background", "rgba(0,0,0,0.6)")
+                  .style("border-radius", "4px")
+                  .style("color", "#fff")
+                  .text("a simple tooltip");
+
                 const barGroups = chart
                   .selectAll()
                   .data(objects)
@@ -2369,6 +6015,24 @@ function Draw(what, by, grouped) {
                   .style("fill", (g) => g.color)
                   .attr("height", (g) => height - yScale(g.prct))
                   .attr("width", xScale.bandwidth())
+                  .on("mouseover", function (a) {
+                    tooltip
+                      .html(
+                        "Activité professionnelle: " +
+                          a.act +
+                          "<br>" +
+                          "Nombre de réponses: " +
+                          a.sum +
+                          "<br>" +
+                          "total des réponses: " +
+                          a.sumAge +
+                          "<br>" +
+                          "Pourcentage: " +
+                          a.prct +
+                          " %"
+                      )
+                      .style("visibility", "visible");
+                  })
                   .on("mouseenter", function (actual, i) {
                     d3.selectAll(".prct").attr("opacity", 0);
 
@@ -2406,6 +6070,11 @@ function Draw(what, by, grouped) {
                         return idx !== i ? text : "";
                       });
                   })
+                  .on("mousemove", function (d) {
+                    tooltip
+                      .style("top", d3.event.pageY - 10 + "px")
+                      .style("left", d3.event.pageX + 10 + "px");
+                  })
                   .on("mouseleave", function () {
                     d3.selectAll(".prct").attr("opacity", 1);
 
@@ -2418,6 +6087,7 @@ function Draw(what, by, grouped) {
 
                     chart.selectAll("#limit").remove();
                     chart.selectAll(".divergence").remove();
+                    tooltip.html(``).style("visibility", "hidden");
                   });
 
                 barGroups
@@ -2464,6 +6134,14 @@ function Draw(what, by, grouped) {
                   .attr("y", height + margin * 1.7)
                   .attr("text-anchor", "start")
                   .text("Source: MNT, 2020");
+
+                svg
+                  .append("text")
+                  .attr("class", "title")
+                  .attr("x", 40 + margin)
+                  .attr("y", 40)
+                  .attr("text-anchor", "middle")
+                  .text("Diagramme de barres");
               });
             }
           }
@@ -2581,6 +6259,20 @@ function Draw(what, by, grouped) {
             .attr("class", "grid")
             .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+          tooltip = d3
+            .select("#layout")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("text-align", "left")
+            .style("visibility", "hidden")
+            .style("padding", "10px")
+            .style("background", "rgba(0,0,0,0.6)")
+            .style("border-radius", "4px")
+            .style("color", "#fff")
+            .text("a simple tooltip");
+
           var slice = chart
             .selectAll(".slice")
             .data(objects)
@@ -2612,10 +6304,32 @@ function Draw(what, by, grouped) {
               return height - y(0);
             })
             .on("mouseover", function (d) {
-              d3.select(this).style("fill", d3.rgb(color(d.rate)).darker(2));
+              d3.select(this).style("fill", hoverColor);
+              tooltip
+                .html(
+                  "Option: " +
+                    d.rate +
+                    "<br>" +
+                    "Nombre de réponses: " +
+                    d.sum +
+                    "<br>" +
+                    "total des réponses: " +
+                    d.sumW +
+                    "<br>" +
+                    "Pourcentage: " +
+                    d.prct +
+                    " %"
+                )
+                .style("visibility", "visible");
             })
-            .on("mouseout", function (d) {
+            .on("mousemove", function (d) {
+              tooltip
+                .style("top", d3.event.pageY - 10 + "px")
+                .style("left", d3.event.pageX + 10 + "px");
+            })
+            .on("mouseleave", function (d) {
               d3.select(this).style("fill", color(d.rate));
+              tooltip.html(``).style("visibility", "hidden");
             });
 
           slice
@@ -2631,6 +6345,14 @@ function Draw(what, by, grouped) {
             .attr("height", function (d) {
               return height - y(d.prct);
             });
+
+          svg
+            .append("text")
+            .attr("class", "title")
+            .attr("x", 40 + margin)
+            .attr("y", 40)
+            .attr("text-anchor", "middle")
+            .text("Diagramme de barres");
 
           //Legend
           var legend = svg
@@ -2820,6 +6542,20 @@ function Draw(what, by, grouped) {
               .attr("class", "grid")
               .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+            tooltip = d3
+              .select("#layout")
+              .append("div")
+              .attr("class", "tooltip")
+              .style("position", "absolute")
+              .style("z-index", "10")
+              .style("text-align", "left")
+              .style("visibility", "hidden")
+              .style("padding", "10px")
+              .style("background", "rgba(0,0,0,0.6)")
+              .style("border-radius", "4px")
+              .style("color", "#fff")
+              .text("a simple tooltip");
+
             var slice = chart
               .selectAll(".slice")
               .data(objects)
@@ -2851,10 +6587,32 @@ function Draw(what, by, grouped) {
                 return height - y(0);
               })
               .on("mouseover", function (d) {
-                d3.select(this).style("fill", d3.rgb(color(d.rate)).darker(2));
+                d3.select(this).style("fill", hoverColor);
+                tooltip
+                  .html(
+                    "Option: " +
+                      d.rate +
+                      "<br>" +
+                      "Nombre de réponses: " +
+                      d.sum +
+                      "<br>" +
+                      "total des réponses: " +
+                      d.sumW +
+                      "<br>" +
+                      "Pourcentage: " +
+                      d.prct +
+                      " %"
+                  )
+                  .style("visibility", "visible");
               })
-              .on("mouseout", function (d) {
+              .on("mousemove", function (d) {
+                tooltip
+                  .style("top", d3.event.pageY - 10 + "px")
+                  .style("left", d3.event.pageX + 10 + "px");
+              })
+              .on("mouseleave", function (d) {
                 d3.select(this).style("fill", color(d.rate));
+                tooltip.html(``).style("visibility", "hidden");
               });
 
             slice
@@ -2940,6 +6698,14 @@ function Draw(what, by, grouped) {
               .attr("y", 40)
               .attr("text-anchor", "middle")
               .text("Les pourcentages des fumeurs par sexe");
+
+            svg
+              .append("text")
+              .attr("class", "title")
+              .attr("x", 40 + margin)
+              .attr("y", 40)
+              .attr("text-anchor", "middle")
+              .text("Diagramme de barres");
 
             svg
               .append("text")
@@ -3062,6 +6828,20 @@ function Draw(what, by, grouped) {
                 .attr("class", "grid")
                 .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+              tooltip = d3
+                .select("#layout")
+                .append("div")
+                .attr("class", "tooltip")
+                .style("position", "absolute")
+                .style("z-index", "10")
+                .style("text-align", "left")
+                .style("visibility", "hidden")
+                .style("padding", "10px")
+                .style("background", "rgba(0,0,0,0.6)")
+                .style("border-radius", "4px")
+                .style("color", "#fff")
+                .text("a simple tooltip");
+
               var slice = chart
                 .selectAll(".slice")
                 .data(objects)
@@ -3093,13 +6873,32 @@ function Draw(what, by, grouped) {
                   return height - y(0);
                 })
                 .on("mouseover", function (d) {
-                  d3.select(this).style(
-                    "fill",
-                    d3.rgb(color(d.rate)).darker(2)
-                  );
+                  d3.select(this).style("fill", hoverColor);
+                  tooltip
+                    .html(
+                      "Option: " +
+                        d.rate +
+                        "<br>" +
+                        "Nombre de réponses: " +
+                        d.sum +
+                        "<br>" +
+                        "total des réponses: " +
+                        d.sumW +
+                        "<br>" +
+                        "Pourcentage: " +
+                        d.prct +
+                        " %"
+                    )
+                    .style("visibility", "visible");
                 })
-                .on("mouseout", function (d) {
+                .on("mousemove", function (d) {
+                  tooltip
+                    .style("top", d3.event.pageY - 10 + "px")
+                    .style("left", d3.event.pageX + 10 + "px");
+                })
+                .on("mouseleave", function (d) {
                   d3.select(this).style("fill", color(d.rate));
+                  tooltip.html(``).style("visibility", "hidden");
                 });
 
               slice
@@ -3115,6 +6914,14 @@ function Draw(what, by, grouped) {
                 .attr("height", function (d) {
                   return height - y(d.prct);
                 });
+
+              svg
+                .append("text")
+                .attr("class", "title")
+                .attr("x", 40 + margin)
+                .attr("y", 40)
+                .attr("text-anchor", "middle")
+                .text("Diagramme de barres");
 
               //Legend
               var legend = svg
@@ -3311,6 +7118,20 @@ function Draw(what, by, grouped) {
                   .attr("class", "grid")
                   .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+                tooltip = d3
+                  .select("#layout")
+                  .append("div")
+                  .attr("class", "tooltip")
+                  .style("position", "absolute")
+                  .style("z-index", "10")
+                  .style("text-align", "left")
+                  .style("visibility", "hidden")
+                  .style("padding", "10px")
+                  .style("background", "rgba(0,0,0,0.6)")
+                  .style("border-radius", "4px")
+                  .style("color", "#fff")
+                  .text("a simple tooltip");
+
                 var slice = chart
                   .selectAll(".slice")
                   .data(objects)
@@ -3342,13 +7163,32 @@ function Draw(what, by, grouped) {
                     return height - y(0);
                   })
                   .on("mouseover", function (d) {
-                    d3.select(this).style(
-                      "fill",
-                      d3.rgb(color(d.rate)).darker(2)
-                    );
+                    d3.select(this).style("fill", hoverColor);
+                    tooltip
+                      .html(
+                        "Option: " +
+                          d.rate +
+                          "<br>" +
+                          "Nombre de réponses: " +
+                          d.sum +
+                          "<br>" +
+                          "total des réponses: " +
+                          d.sumW +
+                          "<br>" +
+                          "Pourcentage: " +
+                          d.prct +
+                          " %"
+                      )
+                      .style("visibility", "visible");
                   })
-                  .on("mouseout", function (d) {
+                  .on("mousemove", function (d) {
+                    tooltip
+                      .style("top", d3.event.pageY - 10 + "px")
+                      .style("left", d3.event.pageX + 10 + "px");
+                  })
+                  .on("mouseleave", function (d) {
                     d3.select(this).style("fill", color(d.rate));
+                    tooltip.html(``).style("visibility", "hidden");
                   });
 
                 slice
@@ -3364,6 +7204,14 @@ function Draw(what, by, grouped) {
                   .attr("height", function (d) {
                     return height - y(d.prct);
                   });
+
+                svg
+                  .append("text")
+                  .attr("class", "title")
+                  .attr("x", 40 + margin)
+                  .attr("y", 40)
+                  .attr("text-anchor", "middle")
+                  .text("Diagramme de barres");
 
                 //Legend
                 var legend = svg
@@ -3559,6 +7407,20 @@ function Draw(what, by, grouped) {
             .attr("class", "grid")
             .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+          tooltip = d3
+            .select("#layout")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("text-align", "left")
+            .style("visibility", "hidden")
+            .style("padding", "10px")
+            .style("background", "rgba(0,0,0,0.6)")
+            .style("border-radius", "4px")
+            .style("color", "#fff")
+            .text("a simple tooltip");
+
           var slice = chart
             .selectAll(".slice")
             .data(objects)
@@ -3590,10 +7452,32 @@ function Draw(what, by, grouped) {
               return height - y(0);
             })
             .on("mouseover", function (d) {
-              d3.select(this).style("fill", d3.rgb(color(d.rate)).darker(2));
+              d3.select(this).style("fill", hoverColor);
+              tooltip
+                .html(
+                  "Option: " +
+                    d.rate +
+                    "<br>" +
+                    "Nombre de réponses: " +
+                    d.sum +
+                    "<br>" +
+                    "total des réponses: " +
+                    d.sumW +
+                    "<br>" +
+                    "Pourcentage: " +
+                    d.prct +
+                    " %"
+                )
+                .style("visibility", "visible");
             })
-            .on("mouseout", function (d) {
+            .on("mousemove", function (d) {
+              tooltip
+                .style("top", d3.event.pageY - 10 + "px")
+                .style("left", d3.event.pageX + 10 + "px");
+            })
+            .on("mouseleave", function (d) {
               d3.select(this).style("fill", color(d.rate));
+              tooltip.html(``).style("visibility", "hidden");
             });
 
           slice
@@ -3609,6 +7493,14 @@ function Draw(what, by, grouped) {
             .attr("height", function (d) {
               return height - y(d.prct);
             });
+
+          svg
+            .append("text")
+            .attr("class", "title")
+            .attr("x", 40 + margin)
+            .attr("y", 40)
+            .attr("text-anchor", "middle")
+            .text("Diagramme de barres");
 
           //Legend
           var legend = svg
@@ -3800,6 +7692,20 @@ function Draw(what, by, grouped) {
               .attr("class", "grid")
               .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+            tooltip = d3
+              .select("#layout")
+              .append("div")
+              .attr("class", "tooltip")
+              .style("position", "absolute")
+              .style("z-index", "10")
+              .style("text-align", "left")
+              .style("visibility", "hidden")
+              .style("padding", "10px")
+              .style("background", "rgba(0,0,0,0.6)")
+              .style("border-radius", "4px")
+              .style("color", "#fff")
+              .text("a simple tooltip");
+
             var slice = chart
               .selectAll(".slice")
               .data(objects)
@@ -3831,10 +7737,32 @@ function Draw(what, by, grouped) {
                 return height - y(0);
               })
               .on("mouseover", function (d) {
-                d3.select(this).style("fill", d3.rgb(color(d.rate)).darker(2));
+                d3.select(this).style("fill", hoverColor);
+                tooltip
+                  .html(
+                    "Option: " +
+                      d.rate +
+                      "<br>" +
+                      "Nombre de réponses: " +
+                      d.sum +
+                      "<br>" +
+                      "total des réponses: " +
+                      d.sumW +
+                      "<br>" +
+                      "Pourcentage: " +
+                      d.prct +
+                      " %"
+                  )
+                  .style("visibility", "visible");
               })
-              .on("mouseout", function (d) {
+              .on("mousemove", function (d) {
+                tooltip
+                  .style("top", d3.event.pageY - 10 + "px")
+                  .style("left", d3.event.pageX + 10 + "px");
+              })
+              .on("mouseleave", function (d) {
                 d3.select(this).style("fill", color(d.rate));
+                tooltip.html(``).style("visibility", "hidden");
               });
 
             slice
@@ -3850,6 +7778,14 @@ function Draw(what, by, grouped) {
               .attr("height", function (d) {
                 return height - y(d.prct);
               });
+
+            svg
+              .append("text")
+              .attr("class", "title")
+              .attr("x", 40 + margin)
+              .attr("y", 40)
+              .attr("text-anchor", "middle")
+              .text("Diagramme de barres");
 
             //Legend
             var legend = svg
@@ -4044,6 +7980,20 @@ function Draw(what, by, grouped) {
                 .attr("class", "grid")
                 .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+              tooltip = d3
+                .select("#layout")
+                .append("div")
+                .attr("class", "tooltip")
+                .style("position", "absolute")
+                .style("z-index", "10")
+                .style("text-align", "left")
+                .style("visibility", "hidden")
+                .style("padding", "10px")
+                .style("background", "rgba(0,0,0,0.6)")
+                .style("border-radius", "4px")
+                .style("color", "#fff")
+                .text("a simple tooltip");
+
               var slice = chart
                 .selectAll(".slice")
                 .data(objects)
@@ -4075,13 +8025,32 @@ function Draw(what, by, grouped) {
                   return height - y(0);
                 })
                 .on("mouseover", function (d) {
-                  d3.select(this).style(
-                    "fill",
-                    d3.rgb(color(d.rate)).darker(2)
-                  );
+                  d3.select(this).style("fill", hoverColor);
+                  tooltip
+                    .html(
+                      "Option: " +
+                        d.rate +
+                        "<br>" +
+                        "Nombre de réponses: " +
+                        d.sum +
+                        "<br>" +
+                        "total des réponses: " +
+                        d.sumW +
+                        "<br>" +
+                        "Pourcentage: " +
+                        d.prct +
+                        " %"
+                    )
+                    .style("visibility", "visible");
                 })
-                .on("mouseout", function (d) {
+                .on("mousemove", function (d) {
+                  tooltip
+                    .style("top", d3.event.pageY - 10 + "px")
+                    .style("left", d3.event.pageX + 10 + "px");
+                })
+                .on("mouseleave", function (d) {
                   d3.select(this).style("fill", color(d.rate));
+                  tooltip.html(``).style("visibility", "hidden");
                 });
 
               slice
@@ -4097,6 +8066,14 @@ function Draw(what, by, grouped) {
                 .attr("height", function (d) {
                   return height - y(d.prct);
                 });
+
+              svg
+                .append("text")
+                .attr("class", "title")
+                .attr("x", 40 + margin)
+                .attr("y", 40)
+                .attr("text-anchor", "middle")
+                .text("Diagramme de barres");
 
               //Legend
               var legend = svg
@@ -4296,6 +8273,20 @@ function Draw(what, by, grouped) {
                   .attr("class", "grid")
                   .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+                tooltip = d3
+                  .select("#layout")
+                  .append("div")
+                  .attr("class", "tooltip")
+                  .style("position", "absolute")
+                  .style("z-index", "10")
+                  .style("text-align", "left")
+                  .style("visibility", "hidden")
+                  .style("padding", "10px")
+                  .style("background", "rgba(0,0,0,0.6)")
+                  .style("border-radius", "4px")
+                  .style("color", "#fff")
+                  .text("a simple tooltip");
+
                 var slice = chart
                   .selectAll(".slice")
                   .data(objects)
@@ -4327,13 +8318,32 @@ function Draw(what, by, grouped) {
                     return height - y(0);
                   })
                   .on("mouseover", function (d) {
-                    d3.select(this).style(
-                      "fill",
-                      d3.rgb(color(d.rate)).darker(2)
-                    );
+                    d3.select(this).style("fill", hoverColor);
+                    tooltip
+                      .html(
+                        "Option: " +
+                          d.rate +
+                          "<br>" +
+                          "Nombre de réponses: " +
+                          d.sum +
+                          "<br>" +
+                          "total des réponses: " +
+                          d.sumW +
+                          "<br>" +
+                          "Pourcentage: " +
+                          d.prct +
+                          " %"
+                      )
+                      .style("visibility", "visible");
                   })
-                  .on("mouseout", function (d) {
+                  .on("mousemove", function (d) {
+                    tooltip
+                      .style("top", d3.event.pageY - 10 + "px")
+                      .style("left", d3.event.pageX + 10 + "px");
+                  })
+                  .on("mouseleave", function (d) {
                     d3.select(this).style("fill", color(d.rate));
+                    tooltip.html(``).style("visibility", "hidden");
                   });
 
                 slice
@@ -4349,6 +8359,14 @@ function Draw(what, by, grouped) {
                   .attr("height", function (d) {
                     return height - y(d.prct);
                   });
+
+                svg
+                  .append("text")
+                  .attr("class", "title")
+                  .attr("x", 40 + margin)
+                  .attr("y", 40)
+                  .attr("text-anchor", "middle")
+                  .text("Diagramme de barres");
 
                 //Legend
                 var legend = svg
@@ -4610,6 +8628,20 @@ function Draw(what, by, grouped) {
             .attr("class", "grid")
             .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+          tooltip = d3
+            .select("#layout")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("text-align", "left")
+            .style("visibility", "hidden")
+            .style("padding", "10px")
+            .style("background", "rgba(0,0,0,0.6)")
+            .style("border-radius", "4px")
+            .style("color", "#fff")
+            .text("a simple tooltip");
+
           var slice = chart
             .selectAll(".slice")
             .data(objects)
@@ -4641,10 +8673,32 @@ function Draw(what, by, grouped) {
               return height - y(0);
             })
             .on("mouseover", function (d) {
-              d3.select(this).style("fill", d3.rgb(color(d.rate)).darker(2));
+              d3.select(this).style("fill", hoverColor);
+              tooltip
+                .html(
+                  "Fréquence: " +
+                    d.rate +
+                    "<br>" +
+                    "Nombre de réponses: " +
+                    d.sum +
+                    "<br>" +
+                    "total des réponses: " +
+                    d.sumW +
+                    "<br>" +
+                    "Pourcentage: " +
+                    d.prct +
+                    " %"
+                )
+                .style("visibility", "visible");
             })
-            .on("mouseout", function (d) {
+            .on("mousemove", function (d) {
+              tooltip
+                .style("top", d3.event.pageY - 10 + "px")
+                .style("left", d3.event.pageX + 10 + "px");
+            })
+            .on("mouseleave", function (d) {
               d3.select(this).style("fill", color(d.rate));
+              tooltip.html(``).style("visibility", "hidden");
             });
 
           slice
@@ -4660,6 +8714,14 @@ function Draw(what, by, grouped) {
             .attr("height", function (d) {
               return height - y(d.prct);
             });
+
+          svg
+            .append("text")
+            .attr("class", "title")
+            .attr("x", 40 + margin)
+            .attr("y", 40)
+            .attr("text-anchor", "middle")
+            .text("Diagramme de barres");
 
           //Legend
           var legend = svg
@@ -4913,6 +8975,20 @@ function Draw(what, by, grouped) {
               .attr("class", "grid")
               .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+            tooltip = d3
+              .select("#layout")
+              .append("div")
+              .attr("class", "tooltip")
+              .style("position", "absolute")
+              .style("z-index", "10")
+              .style("text-align", "left")
+              .style("visibility", "hidden")
+              .style("padding", "10px")
+              .style("background", "rgba(0,0,0,0.6)")
+              .style("border-radius", "4px")
+              .style("color", "#fff")
+              .text("a simple tooltip");
+
             var slice = chart
               .selectAll(".slice")
               .data(objects)
@@ -4944,10 +9020,32 @@ function Draw(what, by, grouped) {
                 return height - y(0);
               })
               .on("mouseover", function (d) {
-                d3.select(this).style("fill", d3.rgb(color(d.rate)).darker(2));
+                d3.select(this).style("fill", hoverColor);
+                tooltip
+                  .html(
+                    "Fréquence: " +
+                      d.rate +
+                      "<br>" +
+                      "Nombre de réponses: " +
+                      d.sum +
+                      "<br>" +
+                      "total des réponses: " +
+                      d.sumW +
+                      "<br>" +
+                      "Pourcentage: " +
+                      d.prct +
+                      " %"
+                  )
+                  .style("visibility", "visible");
               })
-              .on("mouseout", function (d) {
+              .on("mousemove", function (d) {
+                tooltip
+                  .style("top", d3.event.pageY - 10 + "px")
+                  .style("left", d3.event.pageX + 10 + "px");
+              })
+              .on("mouseleave", function (d) {
                 d3.select(this).style("fill", color(d.rate));
+                tooltip.html(``).style("visibility", "hidden");
               });
 
             slice
@@ -4963,6 +9061,14 @@ function Draw(what, by, grouped) {
               .attr("height", function (d) {
                 return height - y(d.prct);
               });
+
+            svg
+              .append("text")
+              .attr("class", "title")
+              .attr("x", 40 + margin)
+              .attr("y", 40)
+              .attr("text-anchor", "middle")
+              .text("Diagramme de barres");
 
             //Legend
             var legend = svg
@@ -5219,6 +9325,20 @@ function Draw(what, by, grouped) {
                 .attr("class", "grid")
                 .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+              tooltip = d3
+                .select("#layout")
+                .append("div")
+                .attr("class", "tooltip")
+                .style("position", "absolute")
+                .style("z-index", "10")
+                .style("text-align", "left")
+                .style("visibility", "hidden")
+                .style("padding", "10px")
+                .style("background", "rgba(0,0,0,0.6)")
+                .style("border-radius", "4px")
+                .style("color", "#fff")
+                .text("a simple tooltip");
+
               var slice = chart
                 .selectAll(".slice")
                 .data(objects)
@@ -5250,13 +9370,32 @@ function Draw(what, by, grouped) {
                   return height - y(0);
                 })
                 .on("mouseover", function (d) {
-                  d3.select(this).style(
-                    "fill",
-                    d3.rgb(color(d.rate)).darker(2)
-                  );
+                  d3.select(this).style("fill", hoverColor);
+                  tooltip
+                    .html(
+                      "Fréquence: " +
+                        d.rate +
+                        "<br>" +
+                        "Nombre de réponses: " +
+                        d.sum +
+                        "<br>" +
+                        "total des réponses: " +
+                        d.sumW +
+                        "<br>" +
+                        "Pourcentage: " +
+                        d.prct +
+                        " %"
+                    )
+                    .style("visibility", "visible");
                 })
-                .on("mouseout", function (d) {
+                .on("mousemove", function (d) {
+                  tooltip
+                    .style("top", d3.event.pageY - 10 + "px")
+                    .style("left", d3.event.pageX + 10 + "px");
+                })
+                .on("mouseleave", function (d) {
                   d3.select(this).style("fill", color(d.rate));
+                  tooltip.html(``).style("visibility", "hidden");
                 });
 
               slice
@@ -5272,6 +9411,14 @@ function Draw(what, by, grouped) {
                 .attr("height", function (d) {
                   return height - y(d.prct);
                 });
+
+              svg
+                .append("text")
+                .attr("class", "title")
+                .attr("x", 40 + margin)
+                .attr("y", 40)
+                .attr("text-anchor", "middle")
+                .text("Diagramme de barres");
 
               //Legend
               var legend = svg
@@ -5532,6 +9679,20 @@ function Draw(what, by, grouped) {
                   .attr("class", "grid")
                   .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+                tooltip = d3
+                  .select("#layout")
+                  .append("div")
+                  .attr("class", "tooltip")
+                  .style("position", "absolute")
+                  .style("z-index", "10")
+                  .style("text-align", "left")
+                  .style("visibility", "hidden")
+                  .style("padding", "10px")
+                  .style("background", "rgba(0,0,0,0.6)")
+                  .style("border-radius", "4px")
+                  .style("color", "#fff")
+                  .text("a simple tooltip");
+
                 var slice = chart
                   .selectAll(".slice")
                   .data(objects)
@@ -5563,13 +9724,32 @@ function Draw(what, by, grouped) {
                     return height - y(0);
                   })
                   .on("mouseover", function (d) {
-                    d3.select(this).style(
-                      "fill",
-                      d3.rgb(color(d.rate)).darker(2)
-                    );
+                    d3.select(this).style("fill", hoverColor);
+                    tooltip
+                      .html(
+                        "Fréquence: " +
+                          d.rate +
+                          "<br>" +
+                          "Nombre de réponses: " +
+                          d.sum +
+                          "<br>" +
+                          "total des réponses: " +
+                          d.sumW +
+                          "<br>" +
+                          "Pourcentage: " +
+                          d.prct +
+                          " %"
+                      )
+                      .style("visibility", "visible");
                   })
-                  .on("mouseout", function (d) {
+                  .on("mousemove", function (d) {
+                    tooltip
+                      .style("top", d3.event.pageY - 10 + "px")
+                      .style("left", d3.event.pageX + 10 + "px");
+                  })
+                  .on("mouseleave", function (d) {
                     d3.select(this).style("fill", color(d.rate));
+                    tooltip.html(``).style("visibility", "hidden");
                   });
 
                 slice
@@ -5585,6 +9765,14 @@ function Draw(what, by, grouped) {
                   .attr("height", function (d) {
                     return height - y(d.prct);
                   });
+
+                svg
+                  .append("text")
+                  .attr("class", "title")
+                  .attr("x", 40 + margin)
+                  .attr("y", 40)
+                  .attr("text-anchor", "middle")
+                  .text("Diagramme de barres");
 
                 //Legend
                 var legend = svg
@@ -5844,6 +10032,20 @@ function Draw(what, by, grouped) {
             .attr("class", "grid")
             .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+          tooltip = d3
+            .select("#layout")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("text-align", "left")
+            .style("visibility", "hidden")
+            .style("padding", "10px")
+            .style("background", "rgba(0,0,0,0.6)")
+            .style("border-radius", "4px")
+            .style("color", "#fff")
+            .text("a simple tooltip");
+
           var slice = chart
             .selectAll(".slice")
             .data(objects)
@@ -5875,10 +10077,32 @@ function Draw(what, by, grouped) {
               return height - y(0);
             })
             .on("mouseover", function (d) {
-              d3.select(this).style("fill", d3.rgb(color(d.rate)).darker(2));
+              d3.select(this).style("fill", hoverColor);
+              tooltip
+                .html(
+                  "Fréquence: " +
+                    d.rate +
+                    "<br>" +
+                    "Nombre de réponses: " +
+                    d.sum +
+                    "<br>" +
+                    "total des réponses: " +
+                    d.sumW +
+                    "<br>" +
+                    "Pourcentage: " +
+                    d.prct +
+                    " %"
+                )
+                .style("visibility", "visible");
             })
-            .on("mouseout", function (d) {
+            .on("mousemove", function (d) {
+              tooltip
+                .style("top", d3.event.pageY - 10 + "px")
+                .style("left", d3.event.pageX + 10 + "px");
+            })
+            .on("mouseleave", function (d) {
               d3.select(this).style("fill", color(d.rate));
+              tooltip.html(``).style("visibility", "hidden");
             });
 
           slice
@@ -5894,6 +10118,14 @@ function Draw(what, by, grouped) {
             .attr("height", function (d) {
               return height - y(d.prct);
             });
+
+          svg
+            .append("text")
+            .attr("class", "title")
+            .attr("x", 40 + margin)
+            .attr("y", 40)
+            .attr("text-anchor", "middle")
+            .text("Diagramme de barres");
 
           //Legend
           var legend = svg
@@ -6147,6 +10379,20 @@ function Draw(what, by, grouped) {
               .attr("class", "grid")
               .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+            tooltip = d3
+              .select("#layout")
+              .append("div")
+              .attr("class", "tooltip")
+              .style("position", "absolute")
+              .style("z-index", "10")
+              .style("text-align", "left")
+              .style("visibility", "hidden")
+              .style("padding", "10px")
+              .style("background", "rgba(0,0,0,0.6)")
+              .style("border-radius", "4px")
+              .style("color", "#fff")
+              .text("a simple tooltip");
+
             var slice = chart
               .selectAll(".slice")
               .data(objects)
@@ -6178,10 +10424,32 @@ function Draw(what, by, grouped) {
                 return height - y(0);
               })
               .on("mouseover", function (d) {
-                d3.select(this).style("fill", d3.rgb(color(d.rate)).darker(2));
+                d3.select(this).style("fill", hoverColor);
+                tooltip
+                  .html(
+                    "Fréquence: " +
+                      d.rate +
+                      "<br>" +
+                      "Nombre de réponses: " +
+                      d.sum +
+                      "<br>" +
+                      "total des réponses: " +
+                      d.sumW +
+                      "<br>" +
+                      "Pourcentage: " +
+                      d.prct +
+                      " %"
+                  )
+                  .style("visibility", "visible");
               })
-              .on("mouseout", function (d) {
+              .on("mousemove", function (d) {
+                tooltip
+                  .style("top", d3.event.pageY - 10 + "px")
+                  .style("left", d3.event.pageX + 10 + "px");
+              })
+              .on("mouseleave", function (d) {
                 d3.select(this).style("fill", color(d.rate));
+                tooltip.html(``).style("visibility", "hidden");
               });
 
             slice
@@ -6197,6 +10465,14 @@ function Draw(what, by, grouped) {
               .attr("height", function (d) {
                 return height - y(d.prct);
               });
+
+            svg
+              .append("text")
+              .attr("class", "title")
+              .attr("x", 40 + margin)
+              .attr("y", 40)
+              .attr("text-anchor", "middle")
+              .text("Diagramme de barres");
 
             //Legend
             var legend = svg
@@ -6453,6 +10729,20 @@ function Draw(what, by, grouped) {
                 .attr("class", "grid")
                 .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+              tooltip = d3
+                .select("#layout")
+                .append("div")
+                .attr("class", "tooltip")
+                .style("position", "absolute")
+                .style("z-index", "10")
+                .style("text-align", "left")
+                .style("visibility", "hidden")
+                .style("padding", "10px")
+                .style("background", "rgba(0,0,0,0.6)")
+                .style("border-radius", "4px")
+                .style("color", "#fff")
+                .text("a simple tooltip");
+
               var slice = chart
                 .selectAll(".slice")
                 .data(objects)
@@ -6484,13 +10774,32 @@ function Draw(what, by, grouped) {
                   return height - y(0);
                 })
                 .on("mouseover", function (d) {
-                  d3.select(this).style(
-                    "fill",
-                    d3.rgb(color(d.rate)).darker(2)
-                  );
+                  d3.select(this).style("fill", hoverColor);
+                  tooltip
+                    .html(
+                      "Fréquence: " +
+                        d.rate +
+                        "<br>" +
+                        "Nombre de réponses: " +
+                        d.sum +
+                        "<br>" +
+                        "total des réponses: " +
+                        d.sumW +
+                        "<br>" +
+                        "Pourcentage: " +
+                        d.prct +
+                        " %"
+                    )
+                    .style("visibility", "visible");
                 })
-                .on("mouseout", function (d) {
+                .on("mousemove", function (d) {
+                  tooltip
+                    .style("top", d3.event.pageY - 10 + "px")
+                    .style("left", d3.event.pageX + 10 + "px");
+                })
+                .on("mouseleave", function (d) {
                   d3.select(this).style("fill", color(d.rate));
+                  tooltip.html(``).style("visibility", "hidden");
                 });
 
               slice
@@ -6506,6 +10815,14 @@ function Draw(what, by, grouped) {
                 .attr("height", function (d) {
                   return height - y(d.prct);
                 });
+
+              svg
+                .append("text")
+                .attr("class", "title")
+                .attr("x", 40 + margin)
+                .attr("y", 40)
+                .attr("text-anchor", "middle")
+                .text("Diagramme de barres");
 
               //Legend
               var legend = svg
@@ -6768,6 +11085,20 @@ function Draw(what, by, grouped) {
                   .attr("class", "grid")
                   .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+                tooltip = d3
+                  .select("#layout")
+                  .append("div")
+                  .attr("class", "tooltip")
+                  .style("position", "absolute")
+                  .style("z-index", "10")
+                  .style("text-align", "left")
+                  .style("visibility", "hidden")
+                  .style("padding", "10px")
+                  .style("background", "rgba(0,0,0,0.6)")
+                  .style("border-radius", "4px")
+                  .style("color", "#fff")
+                  .text("a simple tooltip");
+
                 var slice = chart
                   .selectAll(".slice")
                   .data(objects)
@@ -6799,13 +11130,32 @@ function Draw(what, by, grouped) {
                     return height - y(0);
                   })
                   .on("mouseover", function (d) {
-                    d3.select(this).style(
-                      "fill",
-                      d3.rgb(color(d.rate)).darker(2)
-                    );
+                    d3.select(this).style("fill", hoverColor);
+                    tooltip
+                      .html(
+                        "Fréquence: " +
+                          d.rate +
+                          "<br>" +
+                          "Nombre de réponses: " +
+                          d.sum +
+                          "<br>" +
+                          "total des réponses: " +
+                          d.sumW +
+                          "<br>" +
+                          "Pourcentage: " +
+                          d.prct +
+                          " %"
+                      )
+                      .style("visibility", "visible");
                   })
-                  .on("mouseout", function (d) {
+                  .on("mousemove", function (d) {
+                    tooltip
+                      .style("top", d3.event.pageY - 10 + "px")
+                      .style("left", d3.event.pageX + 10 + "px");
+                  })
+                  .on("mouseleave", function (d) {
                     d3.select(this).style("fill", color(d.rate));
+                    tooltip.html(``).style("visibility", "hidden");
                   });
 
                 slice
@@ -6821,6 +11171,14 @@ function Draw(what, by, grouped) {
                   .attr("height", function (d) {
                     return height - y(d.prct);
                   });
+
+                svg
+                  .append("text")
+                  .attr("class", "title")
+                  .attr("x", 40 + margin)
+                  .attr("y", 40)
+                  .attr("text-anchor", "middle")
+                  .text("Diagramme de barres");
 
                 //Legend
                 var legend = svg
@@ -7088,6 +11446,7 @@ function Draw(what, by, grouped) {
             .attr("class", "tooltip")
             .style("position", "absolute")
             .style("z-index", "10")
+            .style("text-align", "left")
             .style("visibility", "hidden")
             .style("padding", "10px")
             .style("background", "rgba(0,0,0,0.6)")
@@ -7126,14 +11485,21 @@ function Draw(what, by, grouped) {
               return height - y(0);
             })
             .on("mouseover", function (d) {
-              d3.select(this).style("fill", d3.rgb(color(d.rate)).darker(2));
+              d3.select(this).style("fill", hoverColor);
               tooltip
                 .html(
-                  "Nombre de réponses: " +
+                  "Fréquence: " +
+                    d.rate +
+                    "<br>" +
+                    "Nombre de réponses: " +
                     d.sum +
                     "<br>" +
+                    "total des réponses: " +
+                    d.sumW +
+                    "<br>" +
                     "Pourcentage: " +
-                    d.prct
+                    d.prct +
+                    " %"
                 )
                 .style("visibility", "visible");
             })
@@ -7160,6 +11526,14 @@ function Draw(what, by, grouped) {
             .attr("height", function (d) {
               return height - y(d.prct);
             });
+
+          svg
+            .append("text")
+            .attr("class", "title")
+            .attr("x", 40 + margin)
+            .attr("y", 40)
+            .attr("text-anchor", "middle")
+            .text("Diagramme de barres");
 
           //Legend
           var legend = svg
@@ -7413,6 +11787,20 @@ function Draw(what, by, grouped) {
               .attr("class", "grid")
               .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+            tooltip = d3
+              .select("#layout")
+              .append("div")
+              .attr("class", "tooltip")
+              .style("position", "absolute")
+              .style("z-index", "10")
+              .style("text-align", "left")
+              .style("visibility", "hidden")
+              .style("padding", "10px")
+              .style("background", "rgba(0,0,0,0.6)")
+              .style("border-radius", "4px")
+              .style("color", "#fff")
+              .text("a simple tooltip");
+
             var slice = chart
               .selectAll(".slice")
               .data(objects)
@@ -7444,10 +11832,32 @@ function Draw(what, by, grouped) {
                 return height - y(0);
               })
               .on("mouseover", function (d) {
-                d3.select(this).style("fill", d3.rgb(color(d.rate)).darker(2));
+                d3.select(this).style("fill", hoverColor);
+                tooltip
+                  .html(
+                    "Fréquence: " +
+                      d.rate +
+                      "<br>" +
+                      "Nombre de réponses: " +
+                      d.sum +
+                      "<br>" +
+                      "total des réponses: " +
+                      d.sumW +
+                      "<br>" +
+                      "Pourcentage: " +
+                      d.prct +
+                      " %"
+                  )
+                  .style("visibility", "visible");
               })
-              .on("mouseout", function (d) {
+              .on("mousemove", function (d) {
+                tooltip
+                  .style("top", d3.event.pageY - 10 + "px")
+                  .style("left", d3.event.pageX + 10 + "px");
+              })
+              .on("mouseleave", function (d) {
                 d3.select(this).style("fill", color(d.rate));
+                tooltip.html(``).style("visibility", "hidden");
               });
 
             slice
@@ -7463,6 +11873,14 @@ function Draw(what, by, grouped) {
               .attr("height", function (d) {
                 return height - y(d.prct);
               });
+
+            svg
+              .append("text")
+              .attr("class", "title")
+              .attr("x", 40 + margin)
+              .attr("y", 40)
+              .attr("text-anchor", "middle")
+              .text("Diagramme de barres");
 
             //Legend
             var legend = svg
@@ -7721,6 +12139,20 @@ function Draw(what, by, grouped) {
                 .attr("class", "grid")
                 .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+              tooltip = d3
+                .select("#layout")
+                .append("div")
+                .attr("class", "tooltip")
+                .style("position", "absolute")
+                .style("z-index", "10")
+                .style("text-align", "left")
+                .style("visibility", "hidden")
+                .style("padding", "10px")
+                .style("background", "rgba(0,0,0,0.6)")
+                .style("border-radius", "4px")
+                .style("color", "#fff")
+                .text("a simple tooltip");
+
               var slice = chart
                 .selectAll(".slice")
                 .data(objects)
@@ -7752,13 +12184,32 @@ function Draw(what, by, grouped) {
                   return height - y(0);
                 })
                 .on("mouseover", function (d) {
-                  d3.select(this).style(
-                    "fill",
-                    d3.rgb(color(d.rate)).darker(2)
-                  );
+                  d3.select(this).style("fill", hoverColor);
+                  tooltip
+                    .html(
+                      "Fréquence: " +
+                        d.rate +
+                        "<br>" +
+                        "Nombre de réponses: " +
+                        d.sum +
+                        "<br>" +
+                        "total des réponses: " +
+                        d.sumW +
+                        "<br>" +
+                        "Pourcentage: " +
+                        d.prct +
+                        " %"
+                    )
+                    .style("visibility", "visible");
                 })
-                .on("mouseout", function (d) {
+                .on("mousemove", function (d) {
+                  tooltip
+                    .style("top", d3.event.pageY - 10 + "px")
+                    .style("left", d3.event.pageX + 10 + "px");
+                })
+                .on("mouseleave", function (d) {
                   d3.select(this).style("fill", color(d.rate));
+                  tooltip.html(``).style("visibility", "hidden");
                 });
 
               slice
@@ -7774,6 +12225,14 @@ function Draw(what, by, grouped) {
                 .attr("height", function (d) {
                   return height - y(d.prct);
                 });
+
+              svg
+                .append("text")
+                .attr("class", "title")
+                .attr("x", 40 + margin)
+                .attr("y", 40)
+                .attr("text-anchor", "middle")
+                .text("Diagramme de barres");
 
               //Legend
               var legend = svg
@@ -8036,6 +12495,20 @@ function Draw(what, by, grouped) {
                   .attr("class", "grid")
                   .call(makeYLines().tickSize(-width, 0, 0).tickFormat(""));
 
+                tooltip = d3
+                  .select("#layout")
+                  .append("div")
+                  .attr("class", "tooltip")
+                  .style("position", "absolute")
+                  .style("z-index", "10")
+                  .style("text-align", "left")
+                  .style("visibility", "hidden")
+                  .style("padding", "10px")
+                  .style("background", "rgba(0,0,0,0.6)")
+                  .style("border-radius", "4px")
+                  .style("color", "#fff")
+                  .text("a simple tooltip");
+
                 var slice = chart
                   .selectAll(".slice")
                   .data(objects)
@@ -8067,13 +12540,32 @@ function Draw(what, by, grouped) {
                     return height - y(0);
                   })
                   .on("mouseover", function (d) {
-                    d3.select(this).style(
-                      "fill",
-                      d3.rgb(color(d.rate)).darker(2)
-                    );
+                    d3.select(this).style("fill", hoverColor);
+                    tooltip
+                      .html(
+                        "Fréquence: " +
+                          d.rate +
+                          "<br>" +
+                          "Nombre de réponses: " +
+                          d.sum +
+                          "<br>" +
+                          "total des réponses: " +
+                          d.sumW +
+                          "<br>" +
+                          "Pourcentage: " +
+                          d.prct +
+                          " %"
+                      )
+                      .style("visibility", "visible");
                   })
-                  .on("mouseout", function (d) {
+                  .on("mousemove", function (d) {
+                    tooltip
+                      .style("top", d3.event.pageY - 10 + "px")
+                      .style("left", d3.event.pageX + 10 + "px");
+                  })
+                  .on("mouseleave", function (d) {
                     d3.select(this).style("fill", color(d.rate));
+                    tooltip.html(``).style("visibility", "hidden");
                   });
 
                 slice
@@ -8089,6 +12581,14 @@ function Draw(what, by, grouped) {
                   .attr("height", function (d) {
                     return height - y(d.prct);
                   });
+
+                svg
+                  .append("text")
+                  .attr("class", "title")
+                  .attr("x", 40 + margin)
+                  .attr("y", 40)
+                  .attr("text-anchor", "middle")
+                  .text("Diagramme de barres");
 
                 //Legend
                 var legend = svg
@@ -8196,144 +12696,200 @@ function valid() {
   var consoFruit = document.getElementById("ConsoFruit");
   var consoLeg = document.getElementById("ConsoLeg");
 
-  if (avrgAge.checked) {
-    if (byRegion.checked) {
-      Draw("AvgAge", "Region", 0);
-    } else {
-      if (bySexe.checked) {
-        Draw("AvgAge", "Sexe", 0);
+  if (type == "bar") {
+    if (avrgAge.checked) {
+      if (byRegion.checked) {
+        Draw("AvgAge", "Region", 0);
       } else {
-        if (byNivEtud.checked) {
-          Draw("AvgAge", "NivEtud", 0);
+        if (bySexe.checked) {
+          Draw("AvgAge", "Sexe", 0);
         } else {
-          if (byActivity.checked) {
-            Draw("AvgAge", "Activity", 0);
+          if (byNivEtud.checked) {
+            Draw("AvgAge", "NivEtud", 0);
+          } else {
+            if (byActivity.checked) {
+              Draw("AvgAge", "Activity", 0);
+            }
           }
         }
       }
     }
-  }
 
-  if (nbrResp.checked) {
-    if (byRegion.checked) {
-      Draw("NbrResp", "Region", 0);
-    } else {
-      if (bySexe.checked) {
-        Draw("NbrResp", "Sexe", 0);
+    if (nbrResp.checked) {
+      if (byRegion.checked) {
+        Draw("NbrResp", "Region", 0);
       } else {
-        if (byNivEtud.checked) {
-          Draw("NbrResp", "NivEtud", 0);
+        if (bySexe.checked) {
+          Draw("NbrResp", "Sexe", 0);
         } else {
-          if (byActivity.checked) {
-            Draw("NbrResp", "Activity", 0);
+          if (byNivEtud.checked) {
+            Draw("NbrResp", "NivEtud", 0);
+          } else {
+            if (byActivity.checked) {
+              Draw("NbrResp", "Activity", 0);
+            }
           }
         }
       }
     }
-  }
 
-  if (propDis.checked) {
-    if (byRegion.checked) {
-      Draw("PropDis", "Region", 0);
-    } else {
-      if (bySexe.checked) {
-        Draw("PropDis", "Sexe", 0);
+    if (propDis.checked) {
+      if (byRegion.checked) {
+        Draw("PropDis", "Region", 0);
       } else {
-        if (byNivEtud.checked) {
-          Draw("PropDis", "NivEtud", 0);
+        if (bySexe.checked) {
+          Draw("PropDis", "Sexe", 0);
         } else {
-          if (byActivity.checked) {
-            Draw("PropDis", "Activity", 0);
+          if (byNivEtud.checked) {
+            Draw("PropDis", "NivEtud", 0);
+          } else {
+            if (byActivity.checked) {
+              Draw("PropDis", "Activity", 0);
+            }
           }
         }
       }
     }
-  }
 
-  if (tabac.checked) {
-    if (byRegion.checked) {
-      Draw("Tabac", "Region", 1);
-    } else {
-      if (bySexe.checked) {
-        Draw("Tabac", "Sexe", 1);
+    if (tabac.checked) {
+      if (byRegion.checked) {
+        Draw("Tabac", "Region", 1);
       } else {
-        if (byNivEtud.checked) {
-          Draw("Tabac", "NivEtud", 1);
+        if (bySexe.checked) {
+          Draw("Tabac", "Sexe", 1);
         } else {
-          if (byActivity.checked) {
-            Draw("Tabac", "Activity", 1);
+          if (byNivEtud.checked) {
+            Draw("Tabac", "NivEtud", 1);
+          } else {
+            if (byActivity.checked) {
+              Draw("Tabac", "Activity", 1);
+            }
           }
         }
       }
     }
-  }
 
-  if (sport.checked) {
-    if (byRegion.checked) {
-      Draw("Sport", "Region", 1);
-    } else {
-      if (bySexe.checked) {
-        Draw("Sport", "Sexe", 1);
+    if (sport.checked) {
+      if (byRegion.checked) {
+        Draw("Sport", "Region", 1);
       } else {
-        if (byNivEtud.checked) {
-          Draw("Sport", "NivEtud", 1);
+        if (bySexe.checked) {
+          Draw("Sport", "Sexe", 1);
         } else {
-          if (byActivity.checked) {
-            Draw("Sport", "Activity", 1);
+          if (byNivEtud.checked) {
+            Draw("Sport", "NivEtud", 1);
+          } else {
+            if (byActivity.checked) {
+              Draw("Sport", "Activity", 1);
+            }
           }
         }
       }
     }
-  }
 
-  if (alchool.checked) {
-    if (byRegion.checked) {
-      Draw("Alchool", "Region", 1);
-    } else {
-      if (bySexe.checked) {
-        Draw("Alchool", "Sexe", 1);
+    if (alchool.checked) {
+      if (byRegion.checked) {
+        Draw("Alchool", "Region", 1);
       } else {
-        if (byNivEtud.checked) {
-          Draw("Alchool", "NivEtud", 1);
+        if (bySexe.checked) {
+          Draw("Alchool", "Sexe", 1);
         } else {
-          if (byActivity.checked) {
-            Draw("Alchool", "Activity", 1);
+          if (byNivEtud.checked) {
+            Draw("Alchool", "NivEtud", 1);
+          } else {
+            if (byActivity.checked) {
+              Draw("Alchool", "Activity", 1);
+            }
           }
         }
       }
     }
-  }
 
-  if (consoFruit.checked) {
-    if (byRegion.checked) {
-      Draw("ConsoFruit", "Region", 1);
-    } else {
-      if (bySexe.checked) {
-        Draw("ConsoFruit", "Sexe", 1);
+    if (consoFruit.checked) {
+      if (byRegion.checked) {
+        Draw("ConsoFruit", "Region", 1);
       } else {
-        if (byNivEtud.checked) {
-          Draw("ConsoFruit", "NivEtud", 1);
+        if (bySexe.checked) {
+          Draw("ConsoFruit", "Sexe", 1);
         } else {
-          if (byActivity.checked) {
-            Draw("ConsoFruit", "Activity", 1);
+          if (byNivEtud.checked) {
+            Draw("ConsoFruit", "NivEtud", 1);
+          } else {
+            if (byActivity.checked) {
+              Draw("ConsoFruit", "Activity", 1);
+            }
           }
         }
       }
     }
-  }
 
-  if (consoLeg.checked) {
-    if (byRegion.checked) {
-      Draw("ConsoLeg", "Region", 1);
-    } else {
-      if (bySexe.checked) {
-        Draw("ConsoLeg", "Sexe", 1);
+    if (consoLeg.checked) {
+      if (byRegion.checked) {
+        Draw("ConsoLeg", "Region", 1);
       } else {
-        if (byNivEtud.checked) {
-          Draw("ConsoLeg", "NivEtud", 1);
+        if (bySexe.checked) {
+          Draw("ConsoLeg", "Sexe", 1);
         } else {
-          if (byActivity.checked) {
-            Draw("ConsoLeg", "Activity", 1);
+          if (byNivEtud.checked) {
+            Draw("ConsoLeg", "NivEtud", 1);
+          } else {
+            if (byActivity.checked) {
+              Draw("ConsoLeg", "Activity", 1);
+            }
+          }
+        }
+      }
+    }
+  } else {
+    if (avrgAge.checked) {
+      if (byRegion.checked) {
+        DrawP("AvgAge", "Region", 0);
+      } else {
+        if (bySexe.checked) {
+          DrawP("AvgAge", "Sexe", 0);
+        } else {
+          if (byNivEtud.checked) {
+            DrawP("AvgAge", "NivEtud", 0);
+          } else {
+            if (byActivity.checked) {
+              DrawP("AvgAge", "Activity", 0);
+            }
+          }
+        }
+      }
+    }
+
+    if (nbrResp.checked) {
+      if (byRegion.checked) {
+        DrawP("NbrResp", "Region", 0);
+      } else {
+        if (bySexe.checked) {
+          DrawP("NbrResp", "Sexe", 0);
+        } else {
+          if (byNivEtud.checked) {
+            DrawP("NbrResp", "NivEtud", 0);
+          } else {
+            if (byActivity.checked) {
+              DrawP("NbrResp", "Activity", 0);
+            }
+          }
+        }
+      }
+    }
+
+    if (propDis.checked) {
+      if (byRegion.checked) {
+        DrawP("PropDis", "Region", 0);
+      } else {
+        if (bySexe.checked) {
+          DrawP("PropDis", "Sexe", 0);
+        } else {
+          if (byNivEtud.checked) {
+            DrawP("PropDis", "NivEtud", 0);
+          } else {
+            if (byActivity.checked) {
+              DrawP("PropDis", "Activity", 0);
+            }
           }
         }
       }
