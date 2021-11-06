@@ -444,6 +444,11 @@ if (range.value == 1) {
   }
 }
 range.oninput = function () {
+  var propDis = document.getElementById("PropDis");
+  propDis.checked = true;
+  $('input[name="' + propDis.name + '"]')
+    .not(propDis)
+    .prop("checked", false);
   if (range.value == 1) {
     output.value = "Le diabète";
   } else {
@@ -513,7 +518,7 @@ function DrawP(what, by, grouped) {
             return object;
           });
           //JSON.stringify(objects);
-          console.log(objects);
+          //console.log(objects);
 
           var color = d3
             .scaleOrdinal()
@@ -603,7 +608,7 @@ function DrawP(what, by, grouped) {
 
           slices
             .on("mouseover", function (d) {
-              console.log(d);
+              // console.log(d);
               d3.select(this)
                 .transition()
                 .duration(600)
@@ -768,7 +773,7 @@ function DrawP(what, by, grouped) {
               return object;
             });
             //JSON.stringify(objects);
-            console.log(objects);
+            // console.log(objects);
 
             var color = d3
               .scaleOrdinal()
@@ -855,7 +860,7 @@ function DrawP(what, by, grouped) {
 
             slices
               .on("mouseover", function (d) {
-                console.log(d);
+                // console.log(d);
                 d3.select(this)
                   .transition()
                   .duration(600)
@@ -1020,7 +1025,7 @@ function DrawP(what, by, grouped) {
                 return object;
               });
               //JSON.stringify(objects);
-              console.log(objects);
+              // console.log(objects);
 
               var color = d3
                 .scaleOrdinal()
@@ -1107,7 +1112,7 @@ function DrawP(what, by, grouped) {
 
               slices
                 .on("mouseover", function (d) {
-                  console.log(d);
+                  // console.log(d);
                   d3.select(this)
                     .transition()
                     .duration(600)
@@ -1276,7 +1281,7 @@ function DrawP(what, by, grouped) {
                   return object;
                 });
                 //JSON.stringify(objects);
-                console.log(objects);
+                // console.log(objects);
 
                 var color = d3
                   .scaleOrdinal()
@@ -1363,7 +1368,7 @@ function DrawP(what, by, grouped) {
 
                 slices
                   .on("mouseover", function (d) {
-                    console.log(d);
+                    // console.log(d);
                     d3.select(this)
                       .transition()
                       .duration(600)
@@ -1524,7 +1529,7 @@ function DrawP(what, by, grouped) {
             return object;
           });
           //JSON.stringify(objects);
-          console.log(objects);
+          // console.log(objects);
 
           var color = d3
             .scaleOrdinal()
@@ -1611,7 +1616,7 @@ function DrawP(what, by, grouped) {
 
           slices
             .on("mouseover", function (d) {
-              console.log(d);
+              // console.log(d);
               d3.select(this)
                 .transition()
                 .duration(600)
@@ -1763,7 +1768,7 @@ function DrawP(what, by, grouped) {
               return object;
             });
             //JSON.stringify(objects);
-            console.log(objects);
+            // console.log(objects);
 
             var color = d3
               .scaleOrdinal()
@@ -1850,7 +1855,7 @@ function DrawP(what, by, grouped) {
 
             slices
               .on("mouseover", function (d) {
-                console.log(d);
+                // console.log(d);
                 d3.select(this)
                   .transition()
                   .duration(600)
@@ -2002,7 +2007,7 @@ function DrawP(what, by, grouped) {
                 return object;
               });
               //JSON.stringify(objects);
-              console.log(objects);
+              // console.log(objects);
 
               var color = d3
                 .scaleOrdinal()
@@ -2089,7 +2094,7 @@ function DrawP(what, by, grouped) {
 
               slices
                 .on("mouseover", function (d) {
-                  console.log(d);
+                  // console.log(d);
                   d3.select(this)
                     .transition()
                     .duration(600)
@@ -2245,7 +2250,7 @@ function DrawP(what, by, grouped) {
                   return object;
                 });
                 //JSON.stringify(objects);
-                console.log(objects);
+                // console.log(objects);
 
                 var color = d3
                   .scaleOrdinal()
@@ -2332,7 +2337,7 @@ function DrawP(what, by, grouped) {
 
                 slices
                   .on("mouseover", function (d) {
-                    console.log(d);
+                    // console.log(d);
                     d3.select(this)
                       .transition()
                       .duration(600)
@@ -2492,7 +2497,7 @@ function DrawP(what, by, grouped) {
             return object;
           });
           //JSON.stringify(objects);
-          console.log(objects);
+          // console.log(objects);
 
           var color = d3
             .scaleOrdinal()
@@ -2579,7 +2584,7 @@ function DrawP(what, by, grouped) {
 
           slices
             .on("mouseover", function (d) {
-              console.log(d);
+              // console.log(d);
               d3.select(this)
                 .transition()
                 .duration(600)
@@ -2735,7 +2740,7 @@ function DrawP(what, by, grouped) {
               return object;
             });
             //JSON.stringify(objects);
-            console.log(objects);
+            // console.log(objects);
 
             var color = d3
               .scaleOrdinal()
@@ -2822,7 +2827,7 @@ function DrawP(what, by, grouped) {
 
             slices
               .on("mouseover", function (d) {
-                console.log(d);
+                // console.log(d);
                 d3.select(this)
                   .transition()
                   .duration(600)
@@ -2980,7 +2985,7 @@ function DrawP(what, by, grouped) {
                 return object;
               });
               //JSON.stringify(objects);
-              console.log(objects);
+              // console.log(objects);
 
               var color = d3
                 .scaleOrdinal()
@@ -3067,7 +3072,7 @@ function DrawP(what, by, grouped) {
 
               slices
                 .on("mouseover", function (d) {
-                  console.log(d);
+                  // console.log(d);
                   d3.select(this)
                     .transition()
                     .duration(600)
@@ -3231,7 +3236,7 @@ function DrawP(what, by, grouped) {
                   return object;
                 });
                 //JSON.stringify(objects);
-                console.log(objects);
+                // console.log(objects);
 
                 var color = d3
                   .scaleOrdinal()
@@ -3318,7 +3323,7 @@ function DrawP(what, by, grouped) {
 
                 slices
                   .on("mouseover", function (d) {
-                    console.log(d);
+                    // console.log(d);
                     d3.select(this)
                       .transition()
                       .duration(600)
@@ -3499,7 +3504,7 @@ function Draw(what, by, grouped) {
             return object;
           });
           //JSON.stringify(objects);
-          console.log(objects);
+          // console.log(objects);
 
           const xScale = d3
             .scaleBand()
@@ -3725,7 +3730,7 @@ function Draw(what, by, grouped) {
               return object;
             });
             //JSON.stringify(objects);
-            console.log(objects);
+            // console.log(objects);
 
             const xScale = d3
               .scaleBand()
@@ -3955,7 +3960,7 @@ function Draw(what, by, grouped) {
                 return object;
               });
               //JSON.stringify(objects);
-              console.log(objects);
+              // console.log(objects);
 
               const xScale = d3
                 .scaleBand()
@@ -4189,7 +4194,7 @@ function Draw(what, by, grouped) {
                   return object;
                 });
                 //JSON.stringify(objects);
-                console.log(objects);
+                // console.log(objects);
 
                 const xScale = d3
                   .scaleBand()
@@ -4415,7 +4420,7 @@ function Draw(what, by, grouped) {
             return object;
           });
           //JSON.stringify(objects);
-          console.log(objects);
+          // console.log(objects);
 
           const xScale = d3
             .scaleBand()
@@ -4628,7 +4633,7 @@ function Draw(what, by, grouped) {
               return object;
             });
             //JSON.stringify(objects);
-            console.log(objects);
+            // console.log(objects);
 
             const xScale = d3
               .scaleBand()
@@ -4845,7 +4850,7 @@ function Draw(what, by, grouped) {
                 return object;
               });
               //JSON.stringify(objects);
-              console.log(objects);
+              // console.log(objects);
 
               const xScale = d3
                 .scaleBand()
@@ -5066,7 +5071,7 @@ function Draw(what, by, grouped) {
                   return object;
                 });
                 //JSON.stringify(objects);
-                console.log(objects);
+                // console.log(objects);
 
                 const xScale = d3
                   .scaleBand()
@@ -5291,7 +5296,7 @@ function Draw(what, by, grouped) {
             return object;
           });
           //JSON.stringify(objects);
-          console.log(objects);
+          // console.log(objects);
 
           const xScale = d3
             .scaleBand()
@@ -5508,7 +5513,7 @@ function Draw(what, by, grouped) {
               return object;
             });
             //JSON.stringify(objects);
-            console.log(objects);
+            // console.log(objects);
 
             const xScale = d3
               .scaleBand()
@@ -5731,7 +5736,7 @@ function Draw(what, by, grouped) {
                 return object;
               });
               //JSON.stringify(objects);
-              console.log(objects);
+              // console.log(objects);
 
               const xScale = d3
                 .scaleBand()
@@ -5960,7 +5965,7 @@ function Draw(what, by, grouped) {
                   return object;
                 });
                 //JSON.stringify(objects);
-                console.log(objects);
+                // console.log(objects);
 
                 const xScale = d3
                   .scaleBand()
